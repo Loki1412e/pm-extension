@@ -35,9 +35,9 @@ function setPopupStatus(message = '', type = 'info', ms = 5000) {
     return;
   }
   popupStatus.innerHTML = message;
-  popupStatus.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
+  popupStatus.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
   
-  if (type !== 'danger') {
+  if (ms > 0 && type !== 'danger') {
     statusTimeoutId = setTimeout(() => popupStatus.classList.add('d-none'), ms);
   }
 }

@@ -23,8 +23,9 @@ const toggleThemeBtn = $('#toggleTheme');
 const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 'auto': 'bi bi-moon-stars me-2' };
 
-let statusTimeoutId = null;
+// --- Fonctions ---
 
+let statusTimeoutId = null;
 function setPopupStatus(message = '', type = 'info', ms = 5000) {
   if (statusTimeoutId) clearTimeout(statusTimeoutId);
   if (!message) {
@@ -32,9 +33,9 @@ function setPopupStatus(message = '', type = 'info', ms = 5000) {
     return;
   }
   alertSection.innerHTML = message;
-  alertSection.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
+  alertSection.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
   
-  if (type !== 'danger') {
+  if (ms > 0 && type !== 'danger') {
     statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);
   }
 }
@@ -65,9 +66,16 @@ async function testConnection() {
   }
 }
 
-// ... (La fonction setTtlInputGroup est bonne, on la garde) ...
 function setTtlInputGroup() {
-  // (Ton code existant)
+  if (jwtTTL.value !== 'custom') {
+    customTTL.classList.add('d-none');
+    ttlInputGroup.classList.remove('input-group');
+    jwtTTL.style.flex = '';
+    return;
+  }
+  customTTL.classList.remove('d-none');
+  ttlInputGroup.classList.add('input-group');
+  jwtTTL.style.flex = '0 0 40%';
 }
 
 // Charge la config depuis le stockage
@@ -142,7 +150,7 @@ toggleThemeBtn.addEventListener('click', async () => {
   setTheme();
 });
 
-// Changement du TTL
+// Changement du Select pour TTL
 jwtTTL.addEventListener('change', () => {
   setTtlInputGroup();
 });
