@@ -1,219 +1,183 @@
-import { PM_vault, PM_deriveKey } from '../background.js';
-import { ApiClient } from '../apiClient.js';
-const api = new ApiClient();
-
 const $ = s => document.querySelector(s);
-const html = document.documentElement;
+const b = globalThis.browser ?? globalThis.chrome;
 
-const loginSection = $('#loginSection');
-const mainSections = document.querySelectorAll('.mainSections');
-const usernameElems = document.querySelectorAll('.session-username');
+// --- Sélecteurs ---
+const html = document.documentElement;
 const popupStatus = $('#popupStatus');
+const loginSection = $('#loginSection');
+const unlockSection = $('#unlockSection');
+const mainSection = $('#mainSection');
+
 const usernameInput = $('#username');
 const passwordInput = $('#password');
+const masterPasswordInput = $('#masterPassword');
+
 const loginBtn = $('#login');
 const signupBtn = $('#signup');
+const unlockBtn = $('#unlockBtn');
+
 const logoutBtn = $('#logout');
 const optionsBtn = $('#options');
 const vaultBtn = $('#vault');
 const statisticBtn = $('#statistic');
-const decryptBtn = $('#decryptBtn');
-
-let validSession = false;
+const usernameElems = document.querySelectorAll('.session-username');
 
 const toggleThemeBtn = $('#toggleTheme');
 const toggleThemeIcon = $('#toggleThemeIcon');
 const iconClass = { 'dark': 'bi bi-brightness-high-fill', 'light': 'bi bi-moon-stars-fill', 'auto': 'bi bi-moon-stars-fill' };
 
-const statusTypes = ['primary', 'secondary', 'success', 'danger', 'warning',  'info', 'light', 'dark'];
-
-const TIME_TIMEOUT = 5000; // 1000 ms = 1s
+// --- Gestion Status/Erreurs ---
 let statusTimeoutId = null;
-
-let actualPopupSection = null; // 'login' ou 'main'
-
-function timeoutStatus(elem, ms) {
-  statusTimeoutId = setTimeout(() => {
-    elem.classList = 'd-none';
-    statusTimeoutId = null;
-  }, ms);
-}
-
-// Affichage du status
-function setPopupStatus(message='', type='info') {
-  if (!popupStatus) return;
-  if (!message || message === '') {
-    popupStatus.classList = 'd-none';
+function setPopupStatus(message = '', type = 'info', ms = 5000) {
+  if (statusTimeoutId) clearTimeout(statusTimeoutId);
+  if (!message) {
+    popupStatus.classList.add('d-none');
     return;
   }
-  
-  if (!statusTypes.includes(type)) type = 'dark';
-
   popupStatus.innerHTML = message;
-  popupStatus.classList = `alert alert-${type} m-0`;
-
-  if (type === 'danger') return;
-
-  let timout = TIME_TIMEOUT;
-  if (type === 'warning') timout *= 2;
-  timeoutStatus(popupStatus, timout);
+  popupStatus.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
+  
+  if (type !== 'danger') {
+    statusTimeoutId = setTimeout(() => popupStatus.classList.add('d-none'), ms);
+  }
 }
 
-// Affichage des sections
-async function showLogin() {
-  if (actualPopupSection === 'login') return;
-  const { pm_username } = await chrome.storage.local.get(['pm_username']);
-  if (pm_username) usernameInput.value = pm_username;
-  
-  loginSection.classList.remove('d-none');
-  
-  mainSections.forEach(section => {
-    section.classList.add('d-none');
-  });
-  
-  actualPopupSection = 'login';
-}
-
-async function showMain() {
-  if (actualPopupSection === 'main') return;
-  const { pm_username } = await chrome.storage.local.get(['pm_username']);
-  
+// --- Logique d'affichage ---
+function showSection(section) {
+  // Cacher tout
   loginSection.classList.add('d-none');
+  unlockSection.classList.add('d-none');
+  mainSection.classList.add('d-none');
+  logoutBtn.classList.add('d-none');
 
-  usernameElems.forEach(function(elem) {
-    elem.textContent = pm_username || 'USER';
-  });
-  mainSections.forEach(section => {
-    section.classList.remove('d-none');
-  });
-  
-  actualPopupSection = 'main';
-}
-
-// Vérifie si le JWT est valide au lancement
-async function loadUserSession() {
-  const { pm_jwt, pm_username } = await chrome.storage.local.get(['pm_jwt', 'pm_username']);
-  if (pm_username) usernameInput.value = pm_username;
-
-  if (!pm_jwt) {
-    validSession = false;
-    showLogin();
-    return;
-  }
-
-  try {
-    const res = await api.readUser(pm_jwt);
-    if (res.status < 200 || res.status >= 300) throw new Error(res.message || 'Session invalide');
-    const user = res.user;
-    
-    await chrome.storage.local.set({ pm_username: user.username });
-    // setPopupStatus('Session réstaurée', 'success');
-
-    validSession = true;
-    showMain();
-
-  } catch(e) {
-    await chrome.storage.local.set({ pm_jwt: null });
-    validSession = false;
-    showLogin();
-    setPopupStatus(e.message, 'warning');
+  // Afficher la bonne
+  if (section === 'login') {
+    loginSection.classList.remove('d-none');
+  } else if (section === 'unlock') {
+    unlockSection.classList.remove('d-none');
+    logoutBtn.classList.remove('d-none'); // On peut se déconnecter
+  } else if (section === 'main') {
+    mainSection.classList.remove('d-none');
+    logoutBtn.classList.remove('d-none');
   }
 }
 
+async function updateUI(status) {
+  if (!status.isLoggedIn) {
+    showSection('login');
+    const { pm_username } = await b.storage.local.get('pm_username');
+    if (pm_username) usernameInput.value = pm_username;
+  } else if (!status.isVaultUnlocked) {
+    showSection('unlock');
+    masterPasswordInput.focus();
+  } else {
+    showSection('main');
+    const { pm_username } = await b.storage.local.get('pm_username');
+    usernameElems.forEach(elem => { elem.textContent = pm_username || 'USER'; });
+  }
+}
+
+// --- Thème ---
 async function setTheme() {
-  let { pm_theme } = await chrome.storage.local.get('pm_theme');
+  let { pm_theme } = await b.storage.local.get('pm_theme');
   pm_theme = pm_theme || 'auto';
   html.setAttribute('data-bs-theme', pm_theme);
   toggleThemeIcon.classList = iconClass[pm_theme];
 }
+toggleThemeBtn.addEventListener('click', async () => {
+  const { pm_theme } = await b.storage.local.get('pm_theme');
+  const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
+  await b.storage.local.set({ pm_theme: newTheme });
+  setTheme();
+});
+
+
+// --- Événements ---
 
 // Login
-usernameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginBtn.click();
-});
-passwordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginBtn.click();
-});
 loginBtn.addEventListener('click', async () => {
-  try {
-    await chrome.storage.local.set({ pm_username: usernameInput.value });
+  setPopupStatus('Connexion...', 'info', 10000);
+  const res = await b.runtime.sendMessage({
+    type: 'LOGIN',
+    username: usernameInput.value,
+    password: passwordInput.value
+  });
 
-    let { pm_ttl } = await chrome.storage.local.get(['pm_ttl']);
-    
-    const res = await api.login(usernameInput.value, passwordInput.value, pm_ttl || null);
-    if (res.status < 200 || res.status >= 300) throw new Error(res.message || `Erreur: ${res.status}`);
-    await chrome.storage.local.set({ pm_jwt: res.token });
-    PM_vault.credentials = res.credentials;
-
+  if (res.ok) {
     setPopupStatus('Connecté', 'success');
-    validSession = true;
-    showMain();
-
-    usernameInput.value = '';
     passwordInput.value = '';
-  } catch (e) {
-    setPopupStatus(e.message, 'danger');
+    updateUI({ isLoggedIn: true, isVaultUnlocked: false }); // On passe direct à l'écran unlock
+  } else {
+    setPopupStatus(res.error, 'danger');
   }
 });
 
 // Signup
 signupBtn.addEventListener('click', async () => {
-  try {
-    await chrome.storage.local.set({ pm_username: usernameInput.value });
-    const res = await api.signup(usernameInput.value, passwordInput.value);
-    if (res.status < 200 || res.status >= 300) throw new Error(res.message || `Erreur: ${res.status}`);
+  setPopupStatus('Création...', 'info', 10000);
+  const res = await b.runtime.sendMessage({
+    type: 'SIGNUP',
+    username: usernameInput.value,
+    password: passwordInput.value
+  });
+
+  if (res.ok) {
+    setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
-    setPopupStatus('Compte créé. Connectez-vous.', 'success');
-    await chrome.storage.local.set({ pm_username: usernameInput.value });
-  } catch (e) {
-    setPopupStatus(e.message, 'danger');
+  } else {
+    setPopupStatus(res.error, 'danger');
   }
 });
 
-// Ouvrir le coffre-fort
-vaultBtn.addEventListener('click', () => {
-  chrome.tabs.create({ url: '../app/vault.html' });
+// Unlock
+unlockBtn.addEventListener('click', async () => {
+  setPopupStatus('Déverrouillage...', 'info', 10000);
+  const res = await b.runtime.sendMessage({
+    type: 'UNLOCK_VAULT',
+    masterPassword: masterPasswordInput.value
+  });
+
+  if (res.ok) {
+    setPopupStatus('Coffre déverrouillé', 'success');
+    masterPasswordInput.value = '';
+    updateUI({ isLoggedIn: true, isVaultUnlocked: true });
+  } else {
+    setPopupStatus(res.error, 'danger');
+    masterPasswordInput.select();
+  }
 });
 
-// Ouvrir les stats
-statisticBtn.addEventListener('click', () => {
-  chrome.tabs.create({ url: '../app/statistic.html' });
+// Touche "Entrée"
+[usernameInput, passwordInput].forEach(input => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loginBtn.click();
+  });
 });
-
-// Ouvrir options
-optionsBtn.addEventListener('click', () => {
-  if (validSession) chrome.tabs.create({ url: '../app/settings.html' });
-  else chrome.runtime.openOptionsPage();
-});
-
-// Toggle Theme
-toggleThemeBtn.addEventListener('click', async () => {
-  const { pm_theme } = await chrome.storage.local.get('pm_theme');
-  const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
-  await chrome.storage.local.set({ pm_theme: newTheme });
-  setTheme();
+masterPasswordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') unlockBtn.click();
 });
 
 // Logout
 logoutBtn.addEventListener('click', async () => {
-  await chrome.storage.local.set({ pm_jwt: null });
-  showLogin();
+  await b.runtime.sendMessage({ type: 'LOGOUT' });
   setPopupStatus('Déconnecté', 'info');
+  updateUI({ isLoggedIn: false, isVaultUnlocked: false });
 });
 
-// Décrypter password
-decryptBtn.addEventListener('click', (e) => {
-  if (e.target && e.target.id === 'openOptionsBtnAlert') {
-    chrome.runtime.openOptionsPage();
+// Boutons de navigation
+vaultBtn.addEventListener('click', () => b.tabs.create({ url: 'app/vault.html' }));
+statisticBtn.addEventListener('click', () => b.tabs.create({ url: 'app/statistic.html' }));
+optionsBtn.addEventListener('click', () => b.runtime.openOptionsPage());
+
+// --- Initialisation ---
+async function init() {
+  setTheme();
+  const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
+  if (res.ok) {
+    updateUI(res);
+  } else {
+    setPopupStatus(res.error, 'danger');
   }
-});
+}
 
-popupStatus.addEventListener('click', (e) => {
-  if (e.target && e.target.id === 'openOptionsBtnAlert') {
-    chrome.runtime.openOptionsPage();
-  }
-});
-
-// Au lancement
-setTheme();
-loadUserSession();
+init();

@@ -1,19 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr" data-bs-theme="auto">
 <head>
-<meta charset="utf-8">
-<title>Password Manager – Sauvegarde</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin: 20px; }
-  button { margin: 5px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
-</style>
+  <meta charset="UTF-g">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sauvegarder l'identifiant</title>
+  <link href="../libs/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-  <h2>Enregistrer ce compte ?</h2>
-  <p id="info"></p>
-  <button id="save">💾 Sauvegarder</button>
-  <button id="cancel">❌ Refuser</button>
+<body class="p-3">
+  <h5 class="mb-3">Sauvegarder l'identifiant ?</h5>
+  
+  <p>Voulez-vous sauvegarder cet identifiant ?</p>
+  <div class="card bg-light p-2 mb-3">
+    <strong id="info">user@domaine.com</strong>
+  </div>
 
-  <script type="module" src="validation.js" defer></script>
+  <div class="form-floating mb-2">
+    <input type="text" class="form-control" id="description" placeholder="Description (optionnel)">
+    <label for="description">Description (optionnel)</label>
+  </div>
+  
+  <div class="form-floating mb-3">
+    <input type="password" class="form-control" id="masterPassword" placeholder="Mot de passe maître">
+    <label for="masterPassword">Mot de passe maître (requis)</label>
+  </div>
+  
+  <div id="status" class="d-none" role="alert"></div>
+
+  <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <button id="cancel" class="btn btn-outline-secondary">Annuler</button>
+    <button id="save" class="btn btn-primary">Sauvegarder</button>
+  </div>
+
+  <script src="validation.js" type="module"></script>
 </body>
 </html>

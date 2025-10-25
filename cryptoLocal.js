@@ -1,7 +1,15 @@
-// cryptoLocal.js
+// --- Fonctions utilitaires ---
+export function b64FromArr(arr) {
+  return btoa(String.fromCharCode(...new Uint8Array(arr)));
+}
+export function arrFromB64(b64) {
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+}
+
+// --- Dérivation de clé ---
 export async function deriveKeyPBKDF2(masterPassword, saltB64, iterations = 300_000) {
   const enc = new TextEncoder();
-  const salt = Uint8Array.from(atob(saltB64), c => c.charCodeAt(0));
+  const salt = arrFromB64(saltB64);
   const baseKey = await crypto.subtle.importKey(
     'raw',
     enc.encode(masterPassword),
@@ -18,37 +26,49 @@ export async function deriveKeyPBKDF2(masterPassword, saltB64, iterations = 300_
     },
     baseKey,
     { name: 'AES-GCM', length: 256 },
-    false,
+    false, // 'false' car la clé n'est pas extractible
     ['encrypt', 'decrypt']
   );
   return key;
 }
 
-export function b64FromArr(arr) {
-  return btoa(String.fromCharCode(...new Uint8Array(arr)));
-}
-export function arrFromB64(b64) {
-  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-}
-
+// --- Chiffrement ---
 export async function encryptWithPassword(plaintext, masterPassword) {
   // Générer salt + dériver clé
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const key = await deriveKeyPBKDF2(masterPassword, b64FromArr(salt));
+  const saltB64 = b64FromArr(salt);
+  const key = await deriveKeyPBKDF2(masterPassword, saltB64);
+  
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const enc = new TextEncoder();
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plaintext));
+  
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, 
+    key, 
+    enc.encode(plaintext)
+  );
+  
   return {
     ciphertext: b64FromArr(ct),
     iv: b64FromArr(iv),
-    salt: b64FromArr(salt)
+    salt: saltB64 // On renvoie le B64
   };
 }
 
-export async function decryptWithPassword(ciphertextB64, ivB64, saltB64, masterPassword) {
-  const key = await deriveKeyPBKDF2(masterPassword, saltB64);
+// --- Déchiffrement (Optimisé) ---
+export async function decryptWithPassword(ciphertextB64, ivB64, saltB64, masterPassword, key = null) {
+  // Optimisation: Si la clé (CryptoKey) n'est pas fournie, on la dérive.
+  // Sinon, on utilise la clé pré-dérivée.
+  const derivedKey = key ? key : await deriveKeyPBKDF2(masterPassword, saltB64);
+  
   const iv = arrFromB64(ivB64);
-  const ct = arrFromB64(ciphertextB64).buffer;
-  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+  const ct = arrFromB64(ciphertextB64); // .buffer n'est pas nécessaire ici
+
+  const pt = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv }, 
+    derivedKey, 
+    ct
+  );
+  
   return new TextDecoder().decode(pt);
 }

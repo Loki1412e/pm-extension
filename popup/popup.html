@@ -1,93 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr" data-bs-theme="auto">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Password Manager</title>
-
-  <!-- Bootstrap CSS -->
-  <link rel="stylesheet" href="../libs/bootstrap-5.3.8/bootstrap.min.css" />
-  <link rel="stylesheet" href="../libs/bootstrap-icons-1.13.1/bootstrap-icons.min.css" />
-  
-  <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      padding: 12px;
-      min-width: 320px;
-      font-size: 15px;
-      /* On utilise bg-body et text-body dans HTML */
-    }
-    .title h1 {
-      font-size: 1.5rem; /* équivalent ~20px */
-      line-height: 1.2;
-    }
-    .title img {
-      width: 56px;
-      height: 56px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="../libs/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+  <link href="../libs/bootstrap-icons-1.13.1/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="popup.css" rel="stylesheet">
 </head>
-<body class="bg-body-tertiary text-body">
-
-  <div id="app" class="container py-3 d-flex flex-column gap-3" style="max-width: 400px;">
-
-    <!-- Title -->
-    <div class="title d-flex justify-content-center align-items-center gap-2">
-      <h1 class="m-0 me-1">Password</h1>
-      <img src="../assets/icon-128.png" alt="Logo" />
-      <h1 class="m-0">Manager</h1>
+<body>
+  <div class="container-fluid p-3" style="width: 320px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center">
+        <img src="../assets/icon-128.png" width="24" height="24" class="me-2">
+        <span class="fs-5 fw-bold">Password Manager</span>
+      </div>
+      <div>
+        <button id="toggleTheme" class="btn btn-sm btn-outline-secondary border-0">
+          <i id="toggleThemeIcon" class="bi bi-moon-stars-fill"></i>
+        </button>
+      </div>
     </div>
 
-    <section id="popupStatus" class="d-none" role="alert"></section>
+    <div id="popupStatus" class="d-none" role="alert"></div>
 
-    <!-- Login Section -->
-    <section id="loginSection" class="card bg-body-secondary text-body p-3">
-      <h2 class="mb-3 text-center">Connexion</h2>
-      <input id="username" type="text" class="form-control mb-3" placeholder="Nom d'utilisateur" />
-      <input id="password" type="password" class="form-control mb-3" placeholder="Mot de passe" />
-      <div class="d-flex gap-2">
-        <button id="login" class="btn btn-secondary w-50">Connexion</button>
-        <button id="signup" class="btn btn-secondary w-50">Créer</button>
+    <section id="loginSection" class="d-none">
+      <div class="form-floating mb-2">
+        <input type="text" class="form-control" id="username" placeholder="Utilisateur">
+        <label for="username">Utilisateur</label>
+      </div>
+      <div class="form-floating mb-2">
+        <input type="password" class="form-control" id="password" placeholder="Mot de passe">
+        <label for="password">Mot de passe</label>
+      </div>
+      <div class="d-grid gap-2">
+        <button id="login" class="btn btn-primary">Connexion</button>
+        <button id="signup" class="btn btn-outline-secondary">Créer un compte</button>
       </div>
     </section>
 
-    <!-- Main Section -->
-    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
-      <h2 class="mb-3 text-center">Session active</h2>
-      <div class="text-center">Connecté en tant que <strong class="session-username">user</strong></div>
+    <section id="unlockSection" class="d-none">
+       <div class="text-center mb-2">
+        <i class="bi bi-lock-fill" style="font-size: 2rem;"></i>
+        <p class="mb-0 mt-1">Coffre-fort verrouillé</p>
+      </div>
+      <div class="form-floating mb-2">
+        <input type="password" class="form-control" id="masterPassword" placeholder="Mot de passe maître">
+        <label for="masterPassword">Mot de passe maître</label>
+      </div>
+      <div class="d-grid">
+        <button id="unlockBtn" class="btn btn-primary">Déverrouiller</button>
+      </div>
     </section>
 
-    <!-- Vault -->
-    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
-      <button id="vault" class="mb-2 btn btn-secondary w-100">🛡️ Coffre-fort</button>
-      <button class="btn btn-warning d-flex align-items-center justify-content-center" id="decryptBtn">
-        <i class="bi bi-unlock me-2"></i> Déchiffrer
+    <section id="mainSection" class="d-none">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-muted">Connecté en tant que:</span>
+        <strong class="session-username">USER</strong>
+      </div>
+       <div class="d-grid gap-2">
+        <button id="vault" class="btn btn-outline-primary"><i class="bi bi-shield-lock pe-2"></i>Ouvrir le coffre-fort</button>
+        <button id="statistic" class="btn btn-outline-secondary"><i class="bi bi-bar-chart pe-2"></i>Statistiques</button>
+      </div>
+    </section>
+
+    <hr class="my-3">
+    <div class="d-flex justify-content-between">
+      <button id="options" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-gear-fill pe-1"></i> Options
       </button>
-    </section>
-
-    <!-- Statistics -->
-    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
-      <button id="statistic" class="btn btn-secondary w-100">📊 Statistiques</button>
-    </section>
-
-    <!-- Options -->
-    <section class="card bg-body-secondary text-body p-3">
-      <div class="d-flex gap-2 w-100">
-        <button id="options" class="btn btn-secondary w-100">⚙️ Options</button>
-        <button id="toggleTheme" class="btn btn-sm btn-secondary w-50"><i id="toggleThemeIcon" class="bi"></i></button>
-      </div>
-    </section>
-
-    <!-- Logout -->
-    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
-      <button id="logout" class="btn btn-secondary w-100">Déconnexion</button>
-    </section>
+      <button id="logout" class="btn btn-sm btn-outline-danger d-none">
+        <i class="bi bi-box-arrow-right pe-1"></i> Déconnexion
+      </button>
+    </div>
 
   </div>
-
-  <!-- JS -->
-  <script type="module" src="popup.js" defer></script>
-  <!-- Bootstrap JS -->
-  <script type="module" src="../libs/bootstrap-5.3.8/bootstrap.bundle.min.js" defer></script>
+  <script src="popup.js" type="module"></script>
 </body>
 </html>

@@ -1,23 +1,20 @@
 const b = globalThis.browser ?? globalThis.chrome;
 
-const iconAsciiArtUrl = chrome.runtime.getURL('assets/icon-ascii-art.txt');
-
+// --- ASCII Art ---
+const iconAsciiArtUrl = b.runtime.getURL('assets/icon-ascii-art.txt');
 async function logAsciiArt() {
   try {
     const response = await fetch(iconAsciiArtUrl);
     const text = await response.text();
     console.log(text);
   } catch (err) {
-    console.error('Erreur lors de la lecture du fichier :', err);
+    console.log("PM: Password Manager Extension Enabled");
   }
 }
 
-// ----------------------------
-// Détection du formulaire
-// ----------------------------
+// --- Détection Formulaire ---
 function detectLoginForm(root = document) {
   const pw = root.querySelector('input[type="password"]');
-  alert('pw: ' + String(pw));
   if (!pw) return null;
 
   const inputs = Array.from(root.querySelectorAll('input[name], input[type="email"], input[autocomplete="username"]'));
@@ -27,23 +24,18 @@ function detectLoginForm(root = document) {
   return { form, user, pw };
 }
 
-// ----------------------------
-// Query identifiants pour le domaine
-// ----------------------------
+// --- Query ---
 async function queryForDomain() {
   const domain = location.hostname.replace(/^www\./, '');
-  return new Promise(resolve => 
-    b.runtime.sendMessage({ type: 'QUERY_ACCOUNT_FOR_DOMAIN', domain }, resolve)
-  );
+  // Demande les identifiants DÉCHIFFRÉS au background
+  return b.runtime.sendMessage({ type: 'GET_DECRYPTED_CREDENTIALS_FOR_DOMAIN', domain });
 }
 
-// ----------------------------
-// Dropdown d'autofill
-// ----------------------------
+// --- Dropdown ---
 function showAutofillDropdown(matches, input) {
   if (!matches?.length) return;
 
-  // Supprimer l'ancien dropdown
+  // ... (Tout le code de création de 'dropdown' est bon, on le garde) ...
   const oldDropdown = document.getElementById('pmx-dropdown');
   if (oldDropdown) oldDropdown.remove();
 
@@ -60,31 +52,24 @@ function showAutofillDropdown(matches, input) {
     fontSize: '14px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
   });
-
+  
+  // Modifié: le 'click' listener
   matches.forEach(m => {
     const item = document.createElement('div');
-    item.textContent = m.username || new URL(m.url).hostname;
+    // m contient m.username et m.password en clair
+    item.textContent = m.username || new URL(m.url).hostname; 
     item.style.padding = '4px';
     item.style.cursor = 'pointer';
+    
     item.addEventListener('click', async () => {
-      const masterPassword = prompt('Entrez votre mot de passe maître');
-      if (!masterPassword) return;
-
-      const res = await new Promise(r =>
-        b.runtime.sendMessage({ type: 'GET_PASSWORD_PLAINTEXT', id: m.id, masterPassword }, r)
-      );
-
-      if (!res.ok) {
-        alert('Erreur: ' + res.error);
-        return;
-      }
-
+      // Plus besoin de prompt() !
       const detected = detectLoginForm();
       if (!detected) return;
       const { user, pw } = detected;
 
-      if (user) user.value = res.credential.username;
-      pw.value = res.credential.password;
+      if (user) user.value = m.username;
+      pw.value = m.password; // m.password est en clair
+      
       ['input','change'].forEach(ev => {
         if (user) user.dispatchEvent(new Event(ev, { bubbles: true }));
         pw.dispatchEvent(new Event(ev, { bubbles: true }));
@@ -102,16 +87,13 @@ function showAutofillDropdown(matches, input) {
   dropdown.style.top = `${rect.bottom + window.scrollY}px`;
   dropdown.style.left = `${rect.left + window.scrollX}px`;
 
-  // Fermer le dropdown si on clique ailleurs
   function clickOutside(e) {
     if (!dropdown.contains(e.target)) dropdown.remove();
   }
   document.addEventListener('click', clickOutside, { once: true });
 }
 
-// ----------------------------
-// Attach listeners aux inputs
-// ----------------------------
+// --- Listeners ---
 function attachAutofillListeners() {
   const detected = detectLoginForm();
   if (!detected) return;
@@ -124,18 +106,19 @@ function attachAutofillListeners() {
       const res = await queryForDomain();
       if (res.ok && res.matches?.length) {
         showAutofillDropdown(res.matches, input);
+      } else if (!res.ok && res.error === 'VAULT_LOCKED') {
+        // Optionnel: afficher une icône "verrouillé"
+        console.log("PM: Coffre verrouillé. Autofill désactivé.");
       }
     });
   });
 }
 
-// ----------------------------
-// Init
-// ----------------------------
+// --- Init ---
 (async function initAutofill() {
   logAsciiArt();
   try {
-    const storage = await chrome.storage.local.get(['pm_behavior']);
+    const storage = await b.storage.local.get(['pm_behavior']);
     if (storage.pm_behavior?.autofill) {
       attachAutofillListeners();
     }
@@ -144,18 +127,24 @@ function attachAutofillListeners() {
   }
 })();
 
-// ----------------------------
-// Optional: save password prompt on submit
-// ----------------------------
+// --- Sauvegarde ---
 function maybePromptToSave() {
   document.querySelectorAll('form').forEach(f => {
     f.addEventListener('submit', () => {
       const u = f.querySelector('input[type="text"], input[type="email"], input[name*="user"], input[name*="login"]');
       const p = f.querySelector('input[type="password"]');
       if (u && p && p.value) {
-        const query = new URLSearchParams({ username: u.value, password: p.value, url: location.origin }).toString();
-        const popupUrl = chrome.runtime.getURL(`popup/validation.html?${query}`);
-        window.open(popupUrl, '_blank', 'width=400,height=200');
+        
+        // CORRECTION DE SÉCURITÉ:
+        // N'ouvre plus la popup et ne passe RIEN en URL.
+        // Demande simplement au background de gérer la sauvegarde.
+        console.log("PM: Détection de soumission, demande de sauvegarde...");
+        b.runtime.sendMessage({
+          type: 'PROMPT_TO_SAVE',
+          username: u.value,
+          password: p.value,
+          url: location.origin
+        });
       }
     });
   });
