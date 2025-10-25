@@ -67,7 +67,7 @@ password-manager-extension/
 ```html
 ```
 
-## `noLog/main.js`
+## `noLog/settings.js`
 ```js
 ```
 

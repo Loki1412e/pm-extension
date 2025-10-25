@@ -23,9 +23,20 @@ const toggleThemeBtn = $('#toggleTheme');
 const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 'auto': 'bi bi-moon-stars me-2' };
 
-// ... (Les fonctions timeoutStatus et setPopupStatus sont identiques à celles de popup.js) ...
+let statusTimeoutId = null;
+
 function setPopupStatus(message = '', type = 'info', ms = 5000) {
-  // (Copier la fonction de popup.js)
+  if (statusTimeoutId) clearTimeout(statusTimeoutId);
+  if (!message) {
+    popupStatus.classList.add('d-none');
+    return;
+  }
+  popupStatus.innerHTML = message;
+  popupStatus.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
+  
+  if (type !== 'danger') {
+    statusTimeoutId = setTimeout(() => popupStatus.classList.add('d-none'), ms);
+  }
 }
 
 function showLogin() {
