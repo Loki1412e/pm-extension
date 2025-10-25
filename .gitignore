@@ -1,3 +1,7 @@
+extension/assets/*
+!extension/assets/icon-128.png
+!extension/assets/icon-ascii-art.txt
+
 # Logs
 logs
 *.log

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Password Manager</title>
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="../libs/bootstrap-5.3.8/bootstrap.min.css" />
+  <link rel="stylesheet" href="../libs/bootstrap-icons-1.13.1/bootstrap-icons.min.css" />
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      padding: 12px;
+      min-width: 320px;
+      font-size: 15px;
+      /* On utilise bg-body et text-body dans HTML */
+    }
+    .title h1 {
+      font-size: 1.5rem; /* équivalent ~20px */
+      line-height: 1.2;
+    }
+    .title img {
+      width: 56px;
+      height: 56px;
+    }
+  </style>
+</head>
+<body class="bg-body-tertiary text-body">
+
+  <div id="app" class="container py-3 d-flex flex-column gap-3" style="max-width: 400px;">
+
+    <!-- Title -->
+    <div class="title d-flex justify-content-center align-items-center gap-2">
+      <h1 class="m-0 me-1">Password</h1>
+      <img src="../assets/icon-128.png" alt="Logo" />
+      <h1 class="m-0">Manager</h1>
+    </div>
+
+    <section id="popupStatus" class="d-none" role="alert"></section>
+
+    <!-- Login Section -->
+    <section id="loginSection" class="card bg-body-secondary text-body p-3">
+      <h2 class="mb-3 text-center">Connexion</h2>
+      <input id="username" type="text" class="form-control mb-3" placeholder="Nom d'utilisateur" />
+      <input id="password" type="password" class="form-control mb-3" placeholder="Mot de passe" />
+      <div class="d-flex gap-2">
+        <button id="login" class="btn btn-secondary w-50">Connexion</button>
+        <button id="signup" class="btn btn-secondary w-50">Créer</button>
+      </div>
+    </section>
+
+    <!-- Main Section -->
+    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
+      <h2 class="mb-3 text-center">Session active</h2>
+      <div class="text-center">Connecté en tant que <strong class="session-username">user</strong></div>
+    </section>
+
+    <!-- Vault -->
+    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
+      <button id="vault" class="mb-2 btn btn-secondary w-100">🛡️ Coffre-fort</button>
+      <button class="btn btn-warning d-flex align-items-center justify-content-center" id="decryptBtn">
+        <i class="bi bi-unlock me-2"></i> Déchiffrer
+      </button>
+    </section>
+
+    <!-- Statistics -->
+    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
+      <button id="statistic" class="btn btn-secondary w-100">📊 Statistiques</button>
+    </section>
+
+    <!-- Options -->
+    <section class="card bg-body-secondary text-body p-3">
+      <div class="d-flex gap-2 w-100">
+        <button id="options" class="btn btn-secondary w-100">⚙️ Options</button>
+        <button id="toggleTheme" class="btn btn-sm btn-secondary w-50"><i id="toggleThemeIcon" class="bi"></i></button>
+      </div>
+    </section>
+
+    <!-- Logout -->
+    <section class="mainSections card bg-body-secondary text-body p-3 d-none">
+      <button id="logout" class="btn btn-secondary w-100">Déconnexion</button>
+    </section>
+
+  </div>
+
+  <!-- JS -->
+  <script type="module" src="popup.js" defer></script>
+  <!-- Bootstrap JS -->
+  <script type="module" src="../libs/bootstrap-5.3.8/bootstrap.bundle.min.js" defer></script>
+</body>
+</html>

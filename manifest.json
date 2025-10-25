@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Password Manager",
+  "version": "0.1.0",
+  "description": "Auto-remplissage + sauvegarde d'identifiants via Password Manager API",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Password Manager"
+  },
+  "icons": { "128": "assets/icon-128.png" },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

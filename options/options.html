@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Options — Password Manager</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="../libs/bootstrap-5.3.8/bootstrap.min.css" />
+  <link rel="stylesheet" href="../libs/bootstrap-icons-1.13.1/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body class="d-flex flex-column justify-content-center align-items-center bg-body-tertiary text-body">
+<div class="d-flex flex-column justify-content-center align-items-center" style="margin-bottom: 4rem;">
+
+    <!-- Title -->
+    <div class="title d-flex justify-content-center align-items-center gap-2 mt-4 mb-4 w-50">
+        <h1 class="m-0 me-1">Password</h1>
+        <img src="../assets/icon-128.png" alt="Logo"/>
+        <h1 class="m-0">Manager</h1>
+    </div>
+
+    <div id="app" class="container p-0 mt-3 d-flex align-items-center justify-content-center gap-4 mb-4">
+
+        <!-- Status -->
+        <section id="alertSection" class="d-none" role="alert"></section>
+
+        <!-- Config -->
+        <section id="confSection" class="card bg-body-secondary text-body gap-2 p-3 w-100">
+
+            <h2 class="mb-3 text-center">⚙️ Configuration</h2>
+
+            <!-- URL API -->
+            <div class="mb-3">
+                <label for="urlAPI" class="form-label">URL de base de l’API</label>
+                <input id="urlAPI" type="url" class="form-control" placeholder="ex: https://localhost/pm/api" />
+            </div>
+
+            <!-- JWT TTL -->
+            <div class="mb-3">
+                <label for="jwtTTL" class="form-label">Temps d'expiration du JWT</label>
+                <div id="ttlInputGroup">
+                    <select id="jwtTTL" class="form-select">
+                        <option value="10">10 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 heure</option>
+                        <option value="custom">Personnalisé</option>
+                    </select>
+                    <input id="customTTL" type="text" class="form-control" placeholder="Durée entre 1 et 1440 min" min="1" max="1440" />
+                </div>
+                <small class="text-muted">Si "Personnalisé", entrez une durée en minutes.</small>
+            </div>
+
+            <!-- Save Button -->
+            <div class="d-grid mb-2">
+                <button id="save" class="btn btn-primary">💾 Enregistrer et tester la connexion</button>
+            </div>
+
+        </section>
+
+        <!-- Login -->
+        <section id="loginSection" class="card bg-body-secondary text-body p-3 w-100">
+            <div class="d-flex flex-column justify-content-around">
+                <h2 class="mb-3 d-flex justify-content-center align-items-center text-center pe-2">
+                    <span style="font-size: 2rem;">🙎</span>Connexion
+                </h2>
+                <input id="username" type="text" class="form-control mb-3" placeholder="Nom d'utilisateur" />
+                <input id="password" type="password" class="form-control mb-3" placeholder="Mot de passe" />
+                <div class="d-flex gap-2">
+                    <button id="login" class="btn btn-secondary w-50">Connexion</button>
+                    <button id="signup" class="btn btn-secondary w-50">Créer</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="container small text-muted text-center">
+        Password Manager <span id="pmVersion"></span> — Open Source
+    </footer>
+</div>
+
+    <div id="btnOptionsSection" class="d-flex flex-column gap-3">
+        <button id="toggleTheme" class="btn btn-secondary d-flex justify-content-center align-items-center rounded-circle">
+            <i id="toggleThemeIcon"></i>
+        </button>
+        <button id="logout" class="btn btn-secondary d-flex justify-content-center align-items-center rounded-circle">
+            <i class="bi bi-box-arrow-right" style="font-size: 1rem;"></i>
+        </button>
+    </div>
+
+    <!-- JS -->
+    <script src="../libs/bootstrap-5.3.8/bootstrap.bundle.min.js" defer></script>
+    <script type="module" src="options.js" defer></script>
+</body>
+</html>

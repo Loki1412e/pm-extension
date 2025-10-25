@@ -1,0 +1,86 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+main {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto; /* header | inputs | tableau | footer */
+  height: 100vh;
+  margin-left: 220px; /* sidebar sur desktop */
+  transition: margin-left 0.3s ease;
+}
+
+/* Sur mobile, enlever la marge gauche */
+@media (max-width: 767.98px) {
+  main {
+    margin-left: 0;
+    height: auto; /* optionnel, selon besoin */
+    min-height: 100vh;
+  }
+}
+
+.stats-section {
+  padding: 0;
+  margin: 0;
+  justify-self: center;
+}
+
+.table-section {
+  overflow-y: auto;
+  padding-bottom: 1rem;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.vault-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vault-card .table-responsive {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Footer centré, largeur adaptable */
+footer {
+  text-align: center;
+  padding-bottom: 1rem;
+  max-width: 50% !important;
+  margin: 0 auto;
+}
+
+/* Container large mais sans padding horizontal */
+.container {
+  padding-right: 0;
+  padding-left: 0;
+  max-width: 96%;
+}
+
+/* Ajustements spécifiques pour le header inputs sur mobile */
+@media (max-width: 767.98px) {
+  header .input-group {
+    flex-grow: 1;
+    width: 100% !important;
+  }
+  header .btn-primary {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  header {
+    gap: 1rem !important;
+  }
+  footer {
+    max-width: 90% !important;
+  }
+}

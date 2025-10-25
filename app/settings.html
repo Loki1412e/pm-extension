@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paramètres — Password Manager</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="../libs/bootstrap-5.3.8/bootstrap.min.css" />
+  <link rel="stylesheet" href="../libs/bootstrap-icons-1.13.1/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/settings.css" />
+</head>
+<body class="bg-body text-body">
+
+  <!-- Sidebar -->
+  <aside class="d-none d-md-flex flex-column position-fixed top-0 bottom-0 start-0 bg-body border-end p-3" style="width: 220px;">
+    <div class="text-center mb-4">
+      <img src="../assets/icon-128.png" alt="Logo" width="48" class="my-2" />
+      <h5 class="m-0 mb-4">Password<br>Manager</h5>
+    </div>
+
+    <nav class="nav flex-column gap-2 mb-auto">
+      <a class="nav-link active d-flex align-items-center" href="statistic.html"><i class="bi bi-graph-up me-2"></i> Statistiques</a>
+      <a class="nav-link active d-flex align-items-center" href="vault.html"><i class="bi bi-shield-lock me-2"></i> Coffre-fort</a>
+      <a class="nav-link d-flex align-items-center" href="settings.html"><i class="bi bi-gear me-2"></i> Paramètres</a>
+    </nav>
+
+    <button id="toggleTheme" class="btn btn-outline-info w-100 d-flex align-items-center justify-content-center">
+      <i id="toggleThemeIcon" class="bi bi-moon-stars me-2"></i> Changer Thème
+    </button>
+
+    <button id="logout" class="btn btn-outline-danger w-100 mt-4 d-flex align-items-center justify-content-center">
+      <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main>
+    
+    <!-- Header -->
+    <header class="container text-center">
+      <h2 class="mt-4 mb-3 pt-2">⚙️ Paramètres</h2>
+    </header>
+
+    <!-- Content -->
+    <section class="container d-flex flex-column align-items-center justify-content-center gap-4 my-4">
+
+      <!-- Config Card -->
+      <div id="confSection" class="card bg-body-secondary text-body p-4 w-100" style="max-width: 720px;">
+
+        <!-- === Groupe API / JWT === -->
+        <div class="section-group mb-2">
+          <h5 class="mb-3">🔗 Connexion à l'API</h5>
+
+          <!-- API URL -->
+          <div class="mb-3">
+            <label for="urlAPI" class="form-label">URL de base</label>
+            <input id="urlAPI" type="url" class="form-control" placeholder="ex: https://localhost/pm/api" />
+          </div>
+
+          <!-- JWT TTL -->
+          <div class="mb-0">
+            <label for="jwtTTL" class="form-label">Durée de validité du JWT</label>
+            <div id="ttlInputGroup">
+              <select id="jwtTTL" class="form-select">
+                <option value="10">10 minutes</option>
+                <option value="30">30 minutes</option>
+                <option value="60">1 heure</option>
+                <option value="custom">Personnalisé</option>
+              </select>
+              <input id="customTTL" type="number" class="form-control" placeholder="Durée entre 1 et 1440 min" min="1" max="1440" />
+            </div>
+            <small class="text-muted">Si "Personnalisé", entrez la durée en minutes.</small>
+          </div>
+        </div>
+
+        <hr class="pt-1 pb-1">
+
+        <!-- === Groupe Auto-fill === -->
+        <div class="section-group mb-2">
+          <h5 class="mb-3">🧠 Remplissage automatique</h5>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="enableAutofill" />
+            <label class="form-check-label" for="enableAutofill">Activer le remplissage automatique des champs</label>
+          </div>
+        </div>
+
+        <hr class="pt-1 pb-1">
+
+        <!-- === Groupe Password Generator === -->
+        <div class="section-group mb-2">
+          <h5 class="mb-3">🔐 Générateur de mots de passe</h5>
+
+          <div class="mb-3">
+            <label for="passLength" class="form-label">Longueur</label>
+            <input id="passLength" type="number" class="form-control" min="6" max="128" value="16" />
+          </div>
+
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="passLowercase" /> <label class="form-check-label" for="passLowercase">abc — Lettres minuscules</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="passUppercase" /> <label class="form-check-label" for="passUppercase">ABC — Lettres majuscules</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="passNumbers" /> <label class="form-check-label" for="passNumbers">123 — Chiffres</label></div>
+          <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="passSymbols" /> <label class="form-check-label" for="passSymbols">!@# — Symboles spéciaux</label></div>
+
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="passEnforceUsage" /> <label class="form-check-label" for="passEnforceUsage">🔒 Imposer l’usage du générateur</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="passProposeUsage" /> <label class="form-check-label" for="passProposeUsage">💡 Proposer lors de l’enregistrement</label></div>
+        </div>
+
+        <hr class="pt-1 pb-1">
+
+        <!-- === Groupe Thème === -->
+        <div class="section-group mb-2">
+          <h5 class="mb-3">🎨 Thème</h5>
+          <select id="themeSelect" class="form-select">
+            <option value="auto">Automatique</option>
+            <option value="light">Clair</option>
+            <option value="dark">Sombre</option>
+          </select>
+        </div>
+
+        <!-- === Boutons save / reset === -->
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          <button id="reset" class="btn btn-outline-danger btn-sm">♻️ Réinitialiser les préférences</button>
+          <button id="save" class="btn btn-outline-success btn-sm">💾 Sauvegarder</button>
+          <button id="testApiBtn" class="btn btn-outline-info btn-sm">🤖 Tester la connexion API (save auto)</button>
+        </div>
+      </div>
+
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="container small text-muted">
+      Password Manager <span id="pmVersion"></span> — Open Source
+    </footer>
+
+  </main>
+
+  <div id="alertContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050; width: 320px; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+
+  <!-- JS -->
+  <script src="../libs/bootstrap-5.3.8/bootstrap.bundle.min.js" defer></script>
+  <script type="module" src="scripts/utils.js" defer></script>
+  <script type="module" src="scripts/settings.js" defer></script>
+</body>
+</html>

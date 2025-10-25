@@ -1,0 +1,108 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* vertical-align: middle; */
+}
+body {
+  background: #111;
+  color: #f9f9f9;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  padding: 12px;
+  min-width: 320px;
+  font-size: 15px;
+}
+h1 {
+  font-size: 18px;
+}
+h2 {
+  font-size: 16px;
+}
+
+/* Inputs & boutons */
+input, button {
+  background: #222;
+  color: #f9f9f9;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+input::placeholder {
+  color: #888;
+}
+button {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #2a2a2a;
+}
+
+
+.title {
+  align-self: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.title img {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Petit bloc visuel */
+.card {
+  background: #1a1a1a;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.card > section,
+.card > center > section {
+  width: 90%;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+}
+.card h2, .card input {
+  margin: 0;
+  margin-bottom: 12px;
+}
+
+/* Rangées de boutons */
+.row {
+  align-self: center;
+  display: flex;
+  gap: 8px;
+}
+.row button {
+  flex: 1;
+}
+
+/* Statut en haut */
+.status-box {
+  padding: 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  display: none;
+  font-size: 14px;
+}
