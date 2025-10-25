@@ -32,7 +32,7 @@
     }
   ],
   "options_ui": {
-    "page": "options/options.html",
+    "page": "app/settings.html",
     "open_in_tab": true
   },
   "web_accessible_resources": [

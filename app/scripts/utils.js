@@ -63,7 +63,7 @@ export async function setTheme(toggleThemeIconId = 'toggleThemeIconId') {
 }
 
 // Vérifie si le JWT est valide au lancement
-export async function loadUserSession(page = null) {
+export async function loadUserSession() {
   const { pm_jwt } = await chrome.storage.local.get(['pm_jwt']);
 
   if (!pm_jwt) {
