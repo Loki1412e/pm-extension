@@ -12,7 +12,7 @@ const pmVersion = $('#pmVersion');
 const logoutBtn = $('#logout');
 
 const toggleThemeBtn = $('#toggleTheme');
-const toggleThemeIcon = $('#toggleThemeIcon');
+const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 'auto': 'bi bi-moon-stars me-2' };
 
 // Affichage des alert
@@ -51,11 +51,12 @@ export function showAlert(alertId, message, type = 'dark', alertContainerId = 'a
   }, duration);
 }
 
-export async function setTheme(toggleThemeIconId = 'toggleThemeIcon') {
+export async function setTheme(toggleThemeIconId = 'toggleThemeIconId') {
   const toggleThemeIcon = document.getElementById(toggleThemeIconId);
   let { pm_theme } = await chrome.storage.local.get('pm_theme');
   pm_theme = pm_theme || 'auto';
   html.setAttribute('data-bs-theme', pm_theme);
+  if (!toggleThemeIcon) return;
   toggleThemeIcon.classList = iconClass[pm_theme];
   if (pm_theme === 'dark') toggleThemeIcon.style.fontSize = '1.2rem';
   else toggleThemeIcon.style.fontSize = '1rem';
@@ -86,25 +87,37 @@ export async function loadUserSession(page = null) {
 
 // Charge la version de l'extension
 async function loadExtensionVersion() {
-  if (chrome.runtime?.getManifest) {
-    const manifest = chrome.runtime.getManifest();
-    pmVersion.textContent = !manifest.version ? 'UNKNOW VERSION' : `v${manifest.version}`;
+  if (!pmVersion) return;
+
+  try {
+    if (chrome.runtime?.getManifest) {
+      const manifest = chrome.runtime.getManifest();
+      pmVersion.textContent = !manifest?.version ? 'UNKNOWN VERSION' : `v${manifest.version}`;
+    } else {
+      pmVersion.textContent = 'UNKNOWN VERSION';
+    }
+  } catch (e) {
+    pmVersion.textContent = 'UNKNOWN VERSION';
   }
 }
 
 // Toggle Theme
-toggleThemeBtn.addEventListener('click', async () => {
-  const { pm_theme } = await chrome.storage.local.get('pm_theme');
-  const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
-  await chrome.storage.local.set({ pm_theme: newTheme });
-  setTheme();
-});
+if (toggleThemeBtn) {
+  toggleThemeBtn.addEventListener('click', async () => {
+    const { pm_theme } = await chrome.storage.local.get('pm_theme');
+    const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
+    await chrome.storage.local.set({ pm_theme: newTheme });
+    setTheme('toggleThemeIconId');
+  });
+}
 
 // Logout
-logoutBtn.addEventListener('click', async () => {
-  await chrome.storage.local.set({ pm_jwt: null });
-  window.location.href = "../options/options.html";
-});
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    await chrome.storage.local.set({ pm_jwt: null });
+    window.location.href = "../options/options.html";
+  });
+}
 
 //== Au chargement de la page ==//
 await loadUserSession();
