@@ -42,7 +42,7 @@ export class ApiClient {
     } catch (err) {
       return {
         status: 0,
-        message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><span id="openOptionsBtnAlert">Modifier le lien dans options</span> ou <a href='${pm_api + '/docs'}' target='_blank'>Vérifiez certificat SSL (HTTPS)</a>.`
+        message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><a href='${pm_api + '/docs'}' target='_blank'>Vérifier certificat SSL (HTTPS)</a> ou <span id="openOptionsBtnAlert">Modifier le lien dans options</span>.`
       };
     }
   }
