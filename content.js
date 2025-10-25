@@ -35,7 +35,7 @@ async function queryForDomain() {
 function showAutofillDropdown(matches, input) {
   if (!matches?.length) return;
 
-  // ... (Tout le code de création de 'dropdown' est bon, on le garde) ...
+  // Supprimer l'ancien dropdown
   const oldDropdown = document.getElementById('pmx-dropdown');
   if (oldDropdown) oldDropdown.remove();
 

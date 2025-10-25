@@ -2,7 +2,6 @@ export class ApiClient {
   constructor() {}
 
   async parseFastAPIError(errorResponse) {
-    // ... (Ton code de parsing d'erreur est excellent, on le garde) ...
     if (!errorResponse.detail)
       return 'Erreur inconnue';
     
@@ -13,8 +12,26 @@ export class ApiClient {
       .map(err => {
         const field = err.loc && err.loc.length >= 2 ? err.loc[1] : 'champ inconnu';
         const msg = err.msg || 'Erreur inconnue';
-        // ... (ton 'switch case' est parfait) ...
-        return `"${field}" : ${msg}`;
+
+        switch (err.type) {
+          case 'missing':
+            return `Le champ "${field}" est obligatoire.`;
+          case 'value_error.email':
+            return `Le champ "${field}" doit être un email valide.`;
+          case 'type_error.integer':
+          case 'type_error.float':
+          case 'type_error.number':
+            return `Le champ "${field}" doit être un nombre valide.`;
+          case 'value_error.any_str.min_length':
+            return `Le champ "${field}" est trop court.`;
+          case 'value_error.any_str.max_length':
+            return `Le champ "${field}" est trop long.`;
+          case 'value_error.enum':
+            return `Le champ "${field}" contient une valeur invalide.`;
+          default:
+            // Message brut par défaut
+            return `"${field}" : ${msg}`;
+        }
       })
       .join('<br>');
   }

@@ -198,7 +198,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         state.masterKey = derivedKey;
         console.log("Coffre déverrouillé. Déchiffrement en cours...");
 
-        // ...et on déchiffre tout le coffre en mémoire.
+        // et on déchiffre tout le coffre en mémoire.
         const vaultMap = new Map();
         for (const cred of encryptedVault.credentials) {
           const plaintextPassword = await decryptWithPassword(cred.ciphertext, cred.iv, cred.salt, msg.masterPassword, state.masterKey);
@@ -304,7 +304,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
       
-      // ... (Gérer tes autres types de messages ici: 'GET_PASSWORD_PLAINTEXT', etc.)
+      // (Gérer tes autres types de messages ici: 'GET_PASSWORD_PLAINTEXT', etc.)
 
     } catch (err) {
       console.error(`Erreur lors du traitement du message ${msg.type}:`, err);
