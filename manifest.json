@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Password Manager",
-  "version": "0.1.0",
-  "description": "Auto-remplissage + sauvegarde d'identifiants via Password Manager API",
+  "version": "0.1.1",
+  "description": "Auto-remplissage et Sauvegarde d'identifiants via Password Manager API",
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Password Manager"
