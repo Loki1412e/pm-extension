@@ -1,6 +1,8 @@
 const $ = s => document.querySelector(s);
 const b = globalThis.browser ?? globalThis.chrome;
 
+const ACTUAL_PAGE = window.location.pathname.split('/').pop().split('.')[0];
+
 const html = document.documentElement;
 const alertSection = $('#alertSection');
 const logoutBtn = $('#logout');
@@ -34,6 +36,17 @@ function setPopupStatus(message = '', type = 'info', ms = 5000) {
   }
   alertSection.innerHTML = message;
   alertSection.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
+
+  if (message.includes(`id="openOptionsBtnAlert"`)) {
+    const openOptionsBtnAlert = $('#openOptionsBtnAlert');
+    if (openOptionsBtnAlert) {
+      openOptionsBtnAlert.style.textDecoration = 'underline';
+      if (ACTUAL_PAGE === 'settings') return;
+      openOptionsBtnAlert.style.cursor = 'pointer';
+      openOptionsBtnAlert.classList.add('text-primary');
+      openOptionsBtnAlert.addEventListener('click', () => b.runtime.openOptionsPage());
+    }
+  }
   
   if (ms > 0 && type !== 'danger') {
     statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);

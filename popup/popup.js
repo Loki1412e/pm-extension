@@ -1,9 +1,11 @@
 const $ = s => document.querySelector(s);
 const b = globalThis.browser ?? globalThis.chrome;
 
+const ACTUAL_PAGE = window.location.pathname.split('/').pop().split('.')[0];
+
 // --- Sélecteurs ---
 const html = document.documentElement;
-const popupStatus = $('#popupStatus');
+const alertSection = $('#alertSection');
 const loginSection = $('#loginSection');
 const unlockSection = $('#unlockSection');
 const mainSection = $('#mainSection');
@@ -31,14 +33,25 @@ let statusTimeoutId = null;
 function setPopupStatus(message = '', type = 'info', ms = 5000) {
   if (statusTimeoutId) clearTimeout(statusTimeoutId);
   if (!message) {
-    popupStatus.classList.add('d-none');
+    alertSection.classList.add('d-none');
     return;
   }
-  popupStatus.innerHTML = message;
-  popupStatus.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
+  alertSection.innerHTML = message;
+  alertSection.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
+
+  if (message.includes(`id="openOptionsBtnAlert"`)) {
+    const openOptionsBtnAlert = $('#openOptionsBtnAlert');
+    if (openOptionsBtnAlert) {
+      openOptionsBtnAlert.style.textDecoration = 'underline';
+      if (ACTUAL_PAGE === 'settings') return;
+      openOptionsBtnAlert.style.cursor = 'pointer';
+      openOptionsBtnAlert.classList.add('text-primary');
+      openOptionsBtnAlert.addEventListener('click', () => b.runtime.openOptionsPage());
+    }
+  }
   
   if (ms > 0 && type !== 'danger') {
-    statusTimeoutId = setTimeout(() => popupStatus.classList.add('d-none'), ms);
+    statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);
   }
 }
 

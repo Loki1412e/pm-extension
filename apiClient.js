@@ -40,7 +40,10 @@ export class ApiClient {
       return text ? JSON.parse(text) : { status: res.status, ok: true };
 
     } catch (err) {
-      return { status: 0, message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><span id="openOptionsBtnAlert" class="text-primary" style="text-decoration: underline; cursor: pointer;">Modifier le lien dans options</span> ou <a href='${pm_api + '/docs'}' target='_blank'>Vérifiez certificat SSL (HTTPS)</a>.` };
+      return {
+        status: 0,
+        message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><span id="openOptionsBtnAlert">Modifier le lien dans options</span> ou <a href='${pm_api + '/docs'}' target='_blank'>Vérifiez certificat SSL (HTTPS)</a>.`
+      };
     }
   }
 
@@ -88,7 +91,7 @@ export class ApiClient {
     });
   }
 
-  // --- READ CREDENTIAL ---
+  // --- READ CREDENTIAL (Inchangé) ---
   // Note: cette fonction n'est plus vraiment utilisée 
   // car on liste tout le coffre avec listCredentials.
   async readCredential(jwt, credential_id) {
