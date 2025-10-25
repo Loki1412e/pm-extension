@@ -20,7 +20,7 @@ const saveBtn = $('#save');
 const DEFAULT_JWT_TTL = 10;
 
 const toggleThemeBtn = $('#toggleTheme');
-const toggleThemeIcon = $('#toggleThemeIcon');
+const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 'auto': 'bi bi-moon-stars me-2' };
 
 // ... (Les fonctions timeoutStatus et setPopupStatus sont identiques à celles de popup.js) ...

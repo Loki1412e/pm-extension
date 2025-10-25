@@ -23,7 +23,7 @@ const statisticBtn = $('#statistic');
 const usernameElems = document.querySelectorAll('.session-username');
 
 const toggleThemeBtn = $('#toggleTheme');
-const toggleThemeIcon = $('#toggleThemeIcon');
+const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-brightness-high-fill', 'light': 'bi bi-moon-stars-fill', 'auto': 'bi bi-moon-stars-fill' };
 
 // --- Gestion Status/Erreurs ---
