@@ -75,25 +75,37 @@ async function loadConfig() {
   setTtlInputGroup();
 }
 
-// ... (La fonction setTheme est bonne) ...
-async function setTheme() { /* ... */ }
+// Changer le thème
+async function setTheme() {
+  let { pm_theme } = await chrome.storage.local.get('pm_theme');
+  pm_theme = pm_theme || 'auto';
+  html.setAttribute('data-bs-theme', pm_theme);
+  if (!toggleThemeIcon) return;
+  toggleThemeIcon.classList = iconClass[pm_theme];
+  if (pm_theme === 'dark') toggleThemeIcon.style.fontSize = '1.2rem';
+  else toggleThemeIcon.style.fontSize = '1rem';
+}
 
-// Vérifie l'état de la session
+// Vérifie si le JWT est valide au lancement
 async function loadUserSession() {
   const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
   if (res.ok && res.isLoggedIn) {
-     // Si tu veux rediriger vers app/settings.html, fais-le ici
-     // window.location.href = "../app/settings.html";
-     hideLogin();
-     const { pm_username } = await b.storage.local.get('pm_username');
-     usernameInput.value = pm_username || '';
+    window.location.href = "../app/settings.html";
+    //  hideLogin();
+    //  const { pm_username } = await b.storage.local.get('pm_username');
+    //  usernameInput.value = pm_username || '';
   } else {
     showLogin();
   }
 }
 
-// ... (La fonction loadExtensionVersion est bonne) ...
-async function loadExtensionVersion() { /* ... */ }
+// Charge la version de l'extension
+async function loadExtensionVersion() {
+  if (chrome.runtime?.getManifest) {
+    const manifest = chrome.runtime.getManifest();
+    pmVersion.textContent = !manifest.version ? 'UNKNOW VERSION' : `v${manifest.version}`;
+  }
+}
 
 async function saveApiParams() {
   let apiBase = urlAPI.value.trim();
@@ -110,8 +122,19 @@ async function saveApiParams() {
 }
 
 // --- Événements ---
-toggleThemeBtn.addEventListener('click', async () => { /* ... */ });
-jwtTTL.addEventListener('change', () => setTtlInputGroup());
+
+// Toggle Theme
+toggleThemeBtn.addEventListener('click', async () => {
+  const { pm_theme } = await chrome.storage.local.get('pm_theme');
+  const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
+  await chrome.storage.local.set({ pm_theme: newTheme });
+  setTheme();
+});
+
+// Changement du TTL
+jwtTTL.addEventListener('change', () => {
+  setTtlInputGroup();
+});
 
 // Login
 loginBtn.addEventListener('click', async () => {
@@ -150,8 +173,6 @@ signupBtn.addEventListener('click', async () => {
     setPopupStatus(res.error, 'danger');
   }
 });
-
-// ... (Listeners 'keydown' pour login/signup) ...
 
 // Sauvegarde la config
 saveBtn.addEventListener('click', async () => {
