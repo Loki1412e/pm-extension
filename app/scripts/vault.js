@@ -20,7 +20,7 @@ async function decryptVerification(masterPassword) {
 
 decryptBtn.addEventListener('click', async () => {
   encryptWithPassword
-  window.location.href = "../noLog/";
+  window.location.href = "../noLog/settings.html";
 });
 
 //== Au chargement de la page ==//
