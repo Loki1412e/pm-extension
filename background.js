@@ -26,8 +26,32 @@ let state = {
 
 // --- Initialisation au démarrage ---
 
+function getDefaultConf() {
+  return {
+    pm_api: null,
+    pm_jwt: null,
+    pm_ttl: 10, // en minutes
+    pm_username: null,
+    pm_theme: 'auto', // 'light', 'dark', 'auto'
+    pm_behavior: {
+      autofill: true
+    },
+    pm_pass: {
+      enforceUsage: true,
+      proposeUsage: true,
+      rules: {
+        length: 16,
+        lowercase: true,
+        uppercase: true,
+        numbers: true,
+        symbols: true
+      }
+    }
+  };
+}
+
 async function initDefaultStorage() {
-  await chrome.storage.local.clear(); // clear tt
+  await chrome.storage.local.clear(); // clear tt / DEV
   const defaults = getDefaultConf();
   const stored = await chrome.storage.local.get(Object.keys(defaults));
 
