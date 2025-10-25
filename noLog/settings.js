@@ -28,14 +28,14 @@ let statusTimeoutId = null;
 function setPopupStatus(message = '', type = 'info', ms = 5000) {
   if (statusTimeoutId) clearTimeout(statusTimeoutId);
   if (!message) {
-    popupStatus.classList.add('d-none');
+    alertSection.classList.add('d-none');
     return;
   }
-  popupStatus.innerHTML = message;
-  popupStatus.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
+  alertSection.innerHTML = message;
+  alertSection.classList = `alert alert-${type} m-0 mb-3`; // Ajout mb-3
   
   if (type !== 'danger') {
-    statusTimeoutId = setTimeout(() => popupStatus.classList.add('d-none'), ms);
+    statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);
   }
 }
 
