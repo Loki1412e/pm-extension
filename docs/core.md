@@ -63,11 +63,11 @@ password-manager-extension/
 
 ---
 
-## `options/options.html`
+## `noLog/`
 ```html
 ```
 
-## `options/options.js`
+## `noLog/main.js`
 ```js
 ```
 

@@ -67,7 +67,7 @@ export async function loadUserSession() {
   const { pm_jwt } = await chrome.storage.local.get(['pm_jwt']);
 
   if (!pm_jwt) {
-    window.location.href = "../options/options.html";
+    window.location.href = "../noLog/";
     return;
   }
 
@@ -81,7 +81,7 @@ export async function loadUserSession() {
 
   } catch(e) {
     await chrome.storage.local.set({ pm_jwt: null });
-    window.location.href = "../options/options.html";
+    window.location.href = "../noLog/";
   }
 }
 
@@ -115,7 +115,7 @@ if (toggleThemeBtn) {
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     await chrome.storage.local.set({ pm_jwt: null });
-    window.location.href = "../options/options.html";
+    window.location.href = "../noLog/";
   });
 }
 
