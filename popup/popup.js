@@ -28,31 +28,35 @@ const toggleThemeBtn = $('#toggleTheme');
 const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-brightness-high-fill', 'light': 'bi bi-moon-stars-fill', 'auto': 'bi bi-moon-stars-fill' };
 
-// --- Gestion Status/Erreurs ---
+// --- Fonctions ---
+
+// Affichage du status
+const statusTypes = ['primary', 'secondary', 'success', 'danger', 'warning',  'info', 'light', 'dark'];
 let statusTimeoutId = null;
-function setPopupStatus(message = '', type = 'info', ms = 5000) {
-  if (statusTimeoutId) clearTimeout(statusTimeoutId);
-  if (!message) {
-    alertSection.classList.add('d-none');
+const TIME_TIMEOUT = 5000; // 1000 ms = 1s
+
+function timeoutStatus(elem, ms = TIME_TIMEOUT) {
+  statusTimeoutId = setTimeout(() => {
+    elem.classList = 'd-none';
+    statusTimeoutId = null;
+  }, ms);
+}
+
+// timeoutMs = 0 pour pas de timeout
+function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
+  if (!alertSection) return;
+  if (!message || message === '') {
+    alertSection.classList = 'd-none';
     return;
   }
-  alertSection.innerHTML = message;
-  alertSection.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
-
-  if (message.includes(`id="openOptionsBtnAlert"`)) {
-    const openOptionsBtnAlert = $('#openOptionsBtnAlert');
-    if (openOptionsBtnAlert) {
-      openOptionsBtnAlert.style.textDecoration = 'underline';
-      if (ACTUAL_PAGE === 'settings') return;
-      openOptionsBtnAlert.style.cursor = 'pointer';
-      openOptionsBtnAlert.classList.add('text-primary');
-      openOptionsBtnAlert.addEventListener('click', () => b.runtime.openOptionsPage());
-    }
-  }
   
-  if (ms > 0 && type !== 'danger') {
-    statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);
-  }
+  if (!statusTypes.includes(type)) type = 'dark';
+
+  alertSection.innerHTML = message;
+  alertSection.classList = `alert alert-${type} m-0 w-100`;
+
+  if (timeoutMs === 0) return;
+  timeoutStatus(alertSection, timeoutMs);
 }
 
 // --- Logique d'affichage ---
@@ -75,6 +79,7 @@ function showSection(section) {
   }
 }
 
+// Met à jour l'UI en fonction du status
 async function updateUI(status) {
   if (!status.isLoggedIn) {
     showSection('login');
@@ -90,7 +95,7 @@ async function updateUI(status) {
   }
 }
 
-// --- Thème ---
+// Thème
 async function setTheme() {
   let { pm_theme } = await b.storage.local.get('pm_theme');
   pm_theme = pm_theme || 'auto';
@@ -109,7 +114,7 @@ toggleThemeBtn.addEventListener('click', async () => {
 
 // Login
 loginBtn.addEventListener('click', async () => {
-  setPopupStatus('Connexion...', 'info', 10000);
+  setPopupStatus('Connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({
     type: 'LOGIN',
     username: usernameInput.value,
@@ -127,7 +132,7 @@ loginBtn.addEventListener('click', async () => {
 
 // Signup
 signupBtn.addEventListener('click', async () => {
-  setPopupStatus('Création...', 'info', 10000);
+  setPopupStatus('Création...', 'info', 0);
   const res = await b.runtime.sendMessage({
     type: 'SIGNUP',
     username: usernameInput.value,
@@ -144,7 +149,7 @@ signupBtn.addEventListener('click', async () => {
 
 // Unlock
 unlockBtn.addEventListener('click', async () => {
-  setPopupStatus('Déverrouillage...', 'info', 10000);
+  setPopupStatus('Déverrouillage...', 'info', 0);
   const res = await b.runtime.sendMessage({
     type: 'UNLOCK_VAULT',
     masterPassword: masterPasswordInput.value

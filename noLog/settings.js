@@ -27,32 +27,36 @@ const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 
 
 // --- Fonctions ---
 
+// Affichage du status
+const statusTypes = ['primary', 'secondary', 'success', 'danger', 'warning',  'info', 'light', 'dark'];
 let statusTimeoutId = null;
-function setPopupStatus(message = '', type = 'info', ms = 5000) {
-  if (statusTimeoutId) clearTimeout(statusTimeoutId);
-  if (!message) {
-    alertSection.classList.add('d-none');
-    return;
-  }
-  alertSection.innerHTML = message;
-  alertSection.classList = `alert alert-${type} m-0 mb-3 w-100`; // Ajout mb-3
+const TIME_TIMEOUT = 5000; // 1000 ms = 1s
 
-  if (message.includes(`id="openOptionsBtnAlert"`)) {
-    const openOptionsBtnAlert = $('#openOptionsBtnAlert');
-    if (openOptionsBtnAlert) {
-      openOptionsBtnAlert.style.textDecoration = 'underline';
-      if (ACTUAL_PAGE === 'settings') return;
-      openOptionsBtnAlert.style.cursor = 'pointer';
-      openOptionsBtnAlert.classList.add('text-primary');
-      openOptionsBtnAlert.addEventListener('click', () => b.runtime.openOptionsPage());
-    }
-  }
-  
-  if (ms > 0 && type !== 'danger') {
-    statusTimeoutId = setTimeout(() => alertSection.classList.add('d-none'), ms);
-  }
+function timeoutStatus(elem, ms = TIME_TIMEOUT) {
+  statusTimeoutId = setTimeout(() => {
+    elem.classList = 'd-none';
+    statusTimeoutId = null;
+  }, ms);
 }
 
+// timeoutMs = 0 pour pas de timeout
+function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
+  if (!alertSection) return;
+  if (!message || message === '') {
+    alertSection.classList = 'd-none';
+    return;
+  }
+  
+  if (!statusTypes.includes(type)) type = 'dark';
+
+  alertSection.innerHTML = message;
+  alertSection.classList = `alert alert-${type} m-0 w-100`;
+
+  if (timeoutMs === 0) return;
+  timeoutStatus(alertSection, timeoutMs);
+}
+
+// Affiche ou cache la section de login
 function showLogin() {
   logoutBtn.classList.add('d-none');
   loginSection.classList.remove('d-none');
@@ -166,7 +170,7 @@ jwtTTL.addEventListener('change', () => {
 // Login
 loginBtn.addEventListener('click', async () => {
   if (!await saveApiParams()) return; // Sauvegarde d'abord
-  setPopupStatus('Connexion...', 'info');
+  setPopupStatus('Connexion...', 'info', 0);
   
   const res = await b.runtime.sendMessage({
     type: 'LOGIN',
@@ -185,7 +189,7 @@ loginBtn.addEventListener('click', async () => {
 // Signup
 signupBtn.addEventListener('click', async () => {
   if (!await saveApiParams()) return; // Sauvegarde d'abord
-  setPopupStatus('Création...', 'info');
+  setPopupStatus('Création...', 'info', 0);
 
   const res = await b.runtime.sendMessage({
     type: 'SIGNUP',
