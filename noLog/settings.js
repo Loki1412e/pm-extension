@@ -32,7 +32,7 @@ const statusTypes = ['primary', 'secondary', 'success', 'danger', 'warning',  'i
 let statusTimeoutId = null;
 const TIME_TIMEOUT = 5000; // 1000 ms = 1s
 
-function timeoutStatus(elem, ms = TIME_TIMEOUT) {
+function timeoutStatus(elem, ms=TIME_TIMEOUT) {
   statusTimeoutId = setTimeout(() => {
     elem.classList = 'd-none';
     statusTimeoutId = null;
@@ -72,10 +72,10 @@ async function testConnection() {
   setPopupStatus('Test de connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({ type: 'API_HEALTH_CHECK' });
 
-  if (res.status === 200)
+  if (res.ok === 200)
     setPopupStatus(`API connectée (v${res.meta.version})`, 'success');
   else
-    setPopupStatus(res.message || `Erreur: ${res.status}`, 'danger');
+    setPopupStatus(res.message || `Erreur: ${res.status}`, 'danger', 0);
 }
 
 function setTtlInputGroup() {
@@ -144,7 +144,7 @@ async function saveApiParams() {
     
   let ttl = jwtTTL.value === 'custom' ? Number(customTTL.value) : Number(jwtTTL.value);
   if (!Number.isInteger(ttl) || ttl < 1 || ttl > 1440) {
-    setPopupStatus('Invalid: TTL doit être un entier entre 1 et 1440', 'danger');
+    setPopupStatus('Invalid: TTL doit être un entier entre 1 et 1440', 'danger', 0);
     return false;
   }
   
@@ -168,6 +168,12 @@ jwtTTL.addEventListener('change', () => {
 });
 
 // Login
+usernameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
 loginBtn.addEventListener('click', async () => {
   if (!await saveApiParams()) return; // Sauvegarde d'abord
   setPopupStatus('Connexion...', 'info', 0);
@@ -182,7 +188,7 @@ loginBtn.addEventListener('click', async () => {
     setPopupStatus('Connecté', 'success');
     loadUserSession(); // Met à jour l'UI
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error, 'danger', 0);
   }
 });
 
@@ -201,7 +207,7 @@ signupBtn.addEventListener('click', async () => {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error, 'danger', 0);
   }
 });
 

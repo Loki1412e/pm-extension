@@ -35,7 +35,7 @@ const statusTypes = ['primary', 'secondary', 'success', 'danger', 'warning',  'i
 let statusTimeoutId = null;
 const TIME_TIMEOUT = 5000; // 1000 ms = 1s
 
-function timeoutStatus(elem, ms = TIME_TIMEOUT) {
+function timeoutStatus(elem, ms=TIME_TIMEOUT) {
   statusTimeoutId = setTimeout(() => {
     elem.classList = 'd-none';
     statusTimeoutId = null;
@@ -85,10 +85,14 @@ async function updateUI(status) {
     showSection('login');
     const { pm_username } = await b.storage.local.get('pm_username');
     if (pm_username) usernameInput.value = pm_username;
-  } else if (!status.isVaultUnlocked) {
+  }
+  
+  else if (!status.isVaultUnlocked) {
     showSection('unlock');
     masterPasswordInput.focus();
-  } else {
+  }
+  
+  else {
     showSection('main');
     const { pm_username } = await b.storage.local.get('pm_username');
     usernameElems.forEach(elem => { elem.textContent = pm_username || 'USER'; });
@@ -102,6 +106,10 @@ async function setTheme() {
   html.setAttribute('data-bs-theme', pm_theme);
   toggleThemeIcon.classList = iconClass[pm_theme];
 }
+
+// --- Événements ---
+
+// Theme
 toggleThemeBtn.addEventListener('click', async () => {
   const { pm_theme } = await b.storage.local.get('pm_theme');
   const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
@@ -109,10 +117,13 @@ toggleThemeBtn.addEventListener('click', async () => {
   setTheme();
 });
 
-
-// --- Événements ---
-
 // Login
+usernameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+passwordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
 loginBtn.addEventListener('click', async () => {
   setPopupStatus('Connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({
@@ -124,9 +135,9 @@ loginBtn.addEventListener('click', async () => {
   if (res.ok) {
     setPopupStatus('Connecté', 'success');
     passwordInput.value = '';
-    updateUI({ isLoggedIn: true, isVaultUnlocked: false }); // On passe direct à l'écran unlock
+    updateUI({ isLoggedIn: true, isVaultUnlocked: false });
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error, 'danger', 0);
   }
 });
 
@@ -143,7 +154,7 @@ signupBtn.addEventListener('click', async () => {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error, 'danger', 0);
   }
 });
 
@@ -160,7 +171,7 @@ unlockBtn.addEventListener('click', async () => {
     masterPasswordInput.value = '';
     updateUI({ isLoggedIn: true, isVaultUnlocked: true });
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error, 'danger', 0);
     masterPasswordInput.select();
   }
 });
@@ -194,7 +205,7 @@ async function init() {
   if (res.ok) {
     updateUI(res);
   } else {
-    setPopupStatus(res.error, 'danger');
+    setPopupStatus(res.error || 'Erreur inconnue', 'danger', 0);
   }
 }
 
