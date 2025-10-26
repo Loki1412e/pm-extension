@@ -65,18 +65,13 @@ function hideLogin() {
 
 // Teste la connexion à l'API via le background
 async function testConnection() {
-  setPopupStatus('Test de connexion...', 'info');
+  setPopupStatus('Test de connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({ type: 'API_HEALTH_CHECK' });
-  
-  if (res.status === 200) {
-    if (res.meta.identifier !== 'passmanager_api') {
-      setPopupStatus(`API connectée<br>Identifier non reconnu (= ${res.meta.identifier})`, 'warning');
-    } else {
-      setPopupStatus(`API connectée (v${res.meta.version})`, 'success');
-    }
-  } else {
+
+  if (res.status === 200)
+    setPopupStatus(`API connectée (v${res.meta.version})`, 'success');
+  else
     setPopupStatus(res.message || `Erreur: ${res.status}`, 'danger');
-  }
 }
 
 function setTtlInputGroup() {

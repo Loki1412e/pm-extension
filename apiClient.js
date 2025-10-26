@@ -37,6 +37,7 @@ export class ApiClient {
   }
 
   async fetchWithHandling(endpoint, options = {}) {
+    const pm_identifier_expected = 'passmanager_api';
     let pm_api;
     try {
       // Lit la config depuis le storage. C'est OK car seul background.js l'utilise.
@@ -44,22 +45,40 @@ export class ApiClient {
       pm_api = stored.pm_api || 'https://localhost/pm/api'; // Ajout d'un fallback
       const url = pm_api + endpoint;
       const res = await fetch(url, options);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : { status: res.status, ok: true };
+
+      if (data.meta?.identifier != pm_identifier_expected) {
+        return {
+          status: 0,
+          error: `L'identifiant API (${data.meta?.identifier || 'NULL'}) reçu de ${pm_api} n'est pas celui attendu ('${pm_identifier_expected}').<br><span id="openOptionsBtnAlert">Vérifiez le lien dans les options</span>.`,
+          meta: data.meta
+        };
+      }
       
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
-        if (!errorData) return { status: res.status, error: `Erreur HTTP ${res.status}` };
+        if (!errorData)
+          return {
+            status: res.status,
+            error: `Erreur HTTP ${res.status}`,
+            meta: data.meta
+          };
+        
         const errorMsg = await this.parseFastAPIError(errorData);
-        return { status: res.status, message: errorMsg };
+        return {
+          status: res.status,
+          message: errorMsg,
+          meta: data.meta
+        };
       }
       
-      // Gère le cas où le JSON est vide (ex: 204 No Content)
-      const text = await res.text();
-      return text ? JSON.parse(text) : { status: res.status, ok: true };
+      return data;
 
     } catch (err) {
       return {
         status: 0,
-        message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><a href='${pm_api + '/docs'}' target='_blank'>Vérifier certificat SSL (HTTPS)</a> ou <span id="openOptionsBtnAlert">Modifier le lien dans options</span>.`
+        message: `Impossible de joindre l'API (${pm_api}) → ${err.message}.<br><a href='${pm_api + '/docs'}' target='_blank'>Vérifier certificat SSL (HTTPS)</a> ou <span id="openOptionsBtnAlert">Modifier le lien dans les options</span>.`
       };
     }
   }
