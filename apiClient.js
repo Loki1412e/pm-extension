@@ -40,9 +40,8 @@ export class ApiClient {
     const pm_identifier_expected = 'passmanager_api';
     let pm_api;
     try {
-      // Lit la config depuis le storage. C'est OK car seul background.js l'utilise.
       const stored = await chrome.storage.local.get(['pm_api']);
-      pm_api = stored.pm_api || 'https://localhost/pm/api'; // Ajout d'un fallback
+      pm_api = stored.pm_api || 'https://localhost/pm/api';
       const url = pm_api + endpoint;
       const res = await fetch(url, options);
       const text = await res.text();
