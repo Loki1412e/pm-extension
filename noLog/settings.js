@@ -188,7 +188,7 @@ loginBtn.addEventListener('click', async () => {
     setPopupStatus('Connecté', 'success');
     loadUserSession(); // Met à jour l'UI
   } else {
-    setPopupStatus(res.error, 'danger', 0);
+    setPopupStatus(res.error || 'Erreur lors de la connexion.', 'danger', 0);
   }
 });
 
@@ -207,7 +207,7 @@ signupBtn.addEventListener('click', async () => {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
-    setPopupStatus(res.error, 'danger', 0);
+    setPopupStatus(res.error || 'Erreur lors de la création du compte.', 'danger', 0);
   }
 });
 

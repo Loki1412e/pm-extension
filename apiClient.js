@@ -67,7 +67,7 @@ export class ApiClient {
         const errorMsg = await this.parseFastAPIError(errorData);
         return {
           status: res.status,
-          message: errorMsg,
+          error: errorMsg,
           meta: data.meta
         };
       }
