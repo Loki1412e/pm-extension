@@ -75,7 +75,7 @@ async function testConnection() {
   if (res.ok === 200)
     setPopupStatus(`API connectée (v${res.meta.version})`, 'success');
   else
-    setPopupStatus(res.message || `Erreur: ${res.status}`, 'danger', 0);
+    setPopupStatus(res.error || `Erreur: res status = ${res.status}`, 'danger', 0);
 }
 
 function setTtlInputGroup() {

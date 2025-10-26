@@ -55,6 +55,18 @@ function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
   alertSection.innerHTML = message;
   alertSection.classList = `alert alert-${type} m-0 w-100`;
 
+  if (message.includes('openOptionsBtnAlert')) {
+    const openOptionsBtnAlert = document.getElementById('openOptionsBtnAlert');
+    if (openOptionsBtnAlert) {
+      openOptionsBtnAlert.style.textDecoration = 'underline';
+      openOptionsBtnAlert.style.cursor = 'pointer';
+      openOptionsBtnAlert.style.color = '#0066cc';
+      openOptionsBtnAlert.addEventListener('click', () => {
+        b.runtime.openOptionsPage();
+      });
+    }
+  }
+
   if (timeoutMs === 0) return;
   timeoutStatus(alertSection, timeoutMs);
 }

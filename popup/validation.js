@@ -50,7 +50,7 @@ saveBtn.addEventListener('click', async () => {
     // Succès ! On ferme la popup.
     window.close();
   } else {
-    setStatus(res.error);
+    setStatus(res.error || 'Erreur lors de la sauvegarde.', 'danger');
     saveBtn.disabled = false;
     saveBtn.textContent = "Sauvegarder";
   }
