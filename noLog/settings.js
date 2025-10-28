@@ -109,7 +109,7 @@ async function loadConfig() {
   if (!respIsOk(res)) return;
 
   let { pm_api, pm_ttl } = res;
-  urlAPI.value = pm_api || 'https://localhost/pm/api'; // Mettre une valeur par défaut
+  urlAPI.value = pm_api || 'https://api.ptitgourmand.uk/pm'; // Mettre une valeur par défaut
   pm_ttl = Number(pm_ttl) || DEFAULT_JWT_TTL;
   
   const isCustom = !Array.from(jwtTTL.options).some(opt => opt.value === String(pm_ttl));

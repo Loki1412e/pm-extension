@@ -41,7 +41,7 @@ export class ApiClient {
     let pm_api;
     try {
       const stored = await chrome.storage.local.get(['pm_api']);
-      pm_api = stored.pm_api || 'https://localhost/pm/api';
+      pm_api = stored.pm_api || '';
       const url = pm_api + endpoint;
       const res = await fetch(url, options);
       const text = await res.text();
@@ -77,7 +77,7 @@ export class ApiClient {
     } catch (err) {
       return {
         status: 0,
-        error: `Impossible de joindre l'API (${pm_api}): ${err.message}<br><a href='${pm_api + '/docs'}' target='_blank'>Vérifier certificat SSL (HTTPS)</a> ou <span id="openOptionsBtnAlert">Modifier le lien dans les options</span>.`
+        error: `Impossible de joindre l'API (${pm_api}): ${err.message}<br><span id="openOptionsBtnAlert">Modifier l'URL de base de l'API dans les options</span>.`
       };
     }
   }
