@@ -28,7 +28,7 @@ let state = {
 
 function getDefaultConf() {
   return {
-    pm_api: null,
+    pm_api: 'https://api.ptitgourmand.uk/pm', // URL de l'API par défaut
     pm_jwt: null,
     pm_ttl: 10, // en minutes
     pm_username: null,
@@ -344,7 +344,7 @@ async function updateBadge(tabId) {
     }
 
     if (b.action && b.action.setBadgeText) {
-      b.action.setBadgeText({ tabId, text: String(matchCount || '') });
+      b.action.setBadgeText({ tabId, text: String(matchCount || '🔓') });
     }
   } catch (_) {}
 }
