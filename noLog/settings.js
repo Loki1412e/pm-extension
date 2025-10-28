@@ -39,6 +39,17 @@ function timeoutStatus(elem, ms=TIME_TIMEOUT) {
   }, ms);
 }
 
+// --- Helpers pour normaliser les réponses d'API ---
+function respIsOk(res) {
+  // Accept common shapes: { ok: true }, { status: 200 }, or legacy ok===200
+  return !!res && (res.ok === true || res.status === 200 || res.ok === 200);
+}
+
+function respErrorMsg(res) {
+  if (!res) return null;
+  return res.error || res.message || (res.status ? `Erreur: res status = ${res.status}` : null);
+}
+
 // timeoutMs = 0 pour pas de timeout
 function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
   if (!alertSection) return;
@@ -72,10 +83,12 @@ async function testConnection() {
   setPopupStatus('Test de connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({ type: 'API_HEALTH_CHECK' });
 
-  if (res.ok === 200)
-    setPopupStatus(`API connectée (v${res.meta.version})`, 'success');
-  else
-    setPopupStatus(res.error || `Erreur: res status = ${res.status}`, 'danger', 0);
+  if (respIsOk(res)) {
+    const version = res?.meta?.version || '?.?.?';
+    setPopupStatus(`API connectée (v${version})`, 'success');
+  } else {
+    setPopupStatus(respErrorMsg(res) || `Erreur lors du test de connexion.`, 'danger', 0);
+  }
 }
 
 function setTtlInputGroup() {
@@ -93,7 +106,7 @@ function setTtlInputGroup() {
 // Charge la config depuis le stockage
 async function loadConfig() {
   const res = await b.runtime.sendMessage({ type: 'GET_CONFIG' });
-  if (!res.ok) return;
+  if (!respIsOk(res)) return;
 
   let { pm_api, pm_ttl } = res;
   urlAPI.value = pm_api || 'https://localhost/pm/api'; // Mettre une valeur par défaut
@@ -120,7 +133,7 @@ async function setTheme() {
 // Vérifie si le JWT est valide au lancement
 async function loadUserSession() {
   const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
-  if (res.ok && res.isLoggedIn) {
+  if (respIsOk(res) && res.isLoggedIn) {
     window.location.href = "../app/settings.html";
     //  hideLogin();
     //  const { pm_username } = await b.storage.local.get('pm_username');
@@ -149,7 +162,7 @@ async function saveApiParams() {
   }
   
   const res = await b.runtime.sendMessage({ type: 'SAVE_CONFIG', pm_api: apiBase, pm_ttl: ttl });
-  return res.ok;
+  return respIsOk(res);
 }
 
 // --- Événements ---
@@ -184,11 +197,11 @@ loginBtn.addEventListener('click', async () => {
     password: passwordInput.value
   });
   
-  if (res.ok) {
+  if (respIsOk(res)) {
     setPopupStatus('Connecté', 'success');
     loadUserSession(); // Met à jour l'UI
   } else {
-    setPopupStatus(res.error || 'Erreur lors de la connexion.', 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur lors de la connexion.', 'danger', 0);
   }
 });
 
@@ -203,11 +216,11 @@ signupBtn.addEventListener('click', async () => {
     password: passwordInput.value
   });
   
-  if (res.ok) {
+  if (respIsOk(res)) {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
-    setPopupStatus(res.error || 'Erreur lors de la création du compte.', 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur lors de la création du compte.', 'danger', 0);
   }
 });
 

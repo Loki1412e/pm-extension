@@ -42,6 +42,16 @@ function timeoutStatus(elem, ms=TIME_TIMEOUT) {
   }, ms);
 }
 
+// --- Helpers pour normaliser les réponses d'API ---
+function respIsOk(res) {
+  return !!res && (res.ok === true || res.status === 200 || res.ok === 200);
+}
+
+function respErrorMsg(res) {
+  if (!res) return null;
+  return res.error || res.message || (res.status ? `Erreur: res status = ${res.status}` : null);
+}
+
 // timeoutMs = 0 pour pas de timeout
 function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
   if (!alertSection) return;
@@ -144,12 +154,12 @@ loginBtn.addEventListener('click', async () => {
     password: passwordInput.value
   });
 
-  if (res.ok) {
+  if (respIsOk(res)) {
     setPopupStatus('Connecté', 'success');
     passwordInput.value = '';
     updateUI({ isLoggedIn: true, isVaultUnlocked: false });
   } else {
-    setPopupStatus(res.error, 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur lors de la connexion.', 'danger', 0);
   }
 });
 
@@ -166,7 +176,7 @@ signupBtn.addEventListener('click', async () => {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
-    setPopupStatus(res.error, 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur lors de la création du compte.', 'danger', 0);
   }
 });
 
@@ -183,7 +193,7 @@ unlockBtn.addEventListener('click', async () => {
     masterPasswordInput.value = '';
     updateUI({ isLoggedIn: true, isVaultUnlocked: true });
   } else {
-    setPopupStatus(res.error, 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur lors du déverrouillage.', 'danger', 0);
     masterPasswordInput.select();
   }
 });
@@ -214,10 +224,10 @@ optionsBtn.addEventListener('click', () => b.runtime.openOptionsPage());
 async function init() {
   setTheme();
   const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
-  if (res.ok) {
+  if (respIsOk(res)) {
     updateUI(res);
   } else {
-    setPopupStatus(res.error || 'Erreur inconnue', 'danger', 0);
+    setPopupStatus(respErrorMsg(res) || 'Erreur inconnue', 'danger', 0);
   }
 }
 
