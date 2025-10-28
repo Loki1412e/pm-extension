@@ -51,7 +51,7 @@ function getDefaultConf() {
 }
 
 async function initDefaultStorage() {
-  await chrome.storage.local.clear(); // clear tt / DEV
+  // await chrome.storage.local.clear(); // clear tt / DEV
   const defaults = getDefaultConf();
   const stored = await chrome.storage.local.get(Object.keys(defaults));
 
