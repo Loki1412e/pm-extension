@@ -122,17 +122,19 @@ async function updateUI(status) {
     showSection('login');
     const { pm_username } = await b.storage.local.get('pm_username');
     if (pm_username) usernameInput.value = pm_username;
+    return;
   }
   
-  else if (!status.isVaultUnlocked) {
+  const { pm_username } = await b.storage.local.get('pm_username');
+  usernameElems.forEach(elem => { elem.textContent = pm_username || 'USER'; });
+  
+  if (!status.isVaultUnlocked) {
     showSection('unlock');
     masterPasswordInput.focus();
   }
   
   else {
     showSection('main');
-    const { pm_username } = await b.storage.local.get('pm_username');
-    usernameElems.forEach(elem => { elem.textContent = pm_username || 'USER'; });
   }
 }
 
