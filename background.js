@@ -141,13 +141,22 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'SIGNUP') {
-        const res = await api.signup(msg.username, msg.password);
-         if (res.status === 200) {
+        let res = await api.signup(msg.username, msg.password);
+        if (res.status !== 200) throw new Error(res.error || "Échec de l'inscription");
+        res = await api.createCredential(state.jwt, {
+          domain: "passmanager",
+          username: msg.username,
+          ciphertext: "welcome",
+          iv: "welcomeiv123456",
+        });
+        if (res.status === 200) {
           sendResponse({ ok: true, message: "Compte créé. Connectez-vous." });
-        } else {
-          throw new Error(res.error || 'Échec de l\'inscription');
+          return;
         }
-        return;
+        const msgErrCred = res.error || "Échec de la création des identifiants";
+        res = await api.delete(state.jwt, msg.password);
+        if (res.status !== 200) msgErrCred += " / " + (res.error || "Échec de la suppression du compte");
+        throw new Error(msgErrCred);
       }
       
       if (msg.type === 'API_HEALTH_CHECK') {

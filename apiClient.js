@@ -101,6 +101,18 @@ export class ApiClient {
     });
   }
 
+  // --- DELETE ---
+  async delete(jwt, password) {
+    return await this.fetchWithHandling('/user/delete', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ password })
+    });
+  }
+
   // --- READ USER ---
   async readUser(jwt) {
     return await this.fetchWithHandling(`/user/read`, {
