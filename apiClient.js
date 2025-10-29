@@ -100,11 +100,11 @@ export class ApiClient {
   }
 
   // --- SIGNUP ---
-  async signup(username, password, ciphertext, iv, salt) {
+  async signup(username, password, masterSalt, ciphertext, iv) {
     return await this.fetchWithHandling('/user/create', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, ciphertext, iv, salt })
+      body: JSON.stringify({ username, password, masterSalt, ciphertext, iv })
     });
   }
 
@@ -165,12 +165,12 @@ export class ApiClient {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        "url": `https://${domain}`, // L'API attend 'url', pas 'domain'
+        "domain": domain,
         "username": username,
         "ciphertext": ciphertext,
         "iv": iv,
         "salt": salt,
-        "description": description 
+        "description": description || ""
       })
     });
   }
