@@ -18,7 +18,7 @@ async function loadStatistics() {
 
   if (!res.isVaultUnlocked) {
     document.getElementById('statTotal').textContent = '🔒';
-    showAlert('stats', 'Le coffre-fort est verrouillé. Déverrouillez-le pour voir vos statistiques.', 'warning', 'alertContainer', 0);
+    showAlert('stats', 'Le coffre-fort est verrouillé. Déverrouillez-le pour voir vos statistiques.', 'warning', 0, 'alertContainer');
     return;
   }
 
