@@ -49,26 +49,33 @@ export class ApiClient {
 
       if (data.meta?.identifier != pm_identifier_expected) {
         return {
+          ok: false,
           status: 0,
           error: `L'identifiant API (${data.meta?.identifier || 'NULL'}) reçu de ${pm_api} n'est pas celui attendu ('${pm_identifier_expected}').<br><span id="openOptionsBtnAlert">Vérifiez le lien dans les options</span>.`,
           meta: data.meta
         };
       }
       
-      if (!res.ok) {
+      if (!res.ok || res.status >= 300) {
         // data est déjà parsé plus haut
         const errorMsg = await this.parseFastAPIError(data);
         return {
+          ok: false,
           status: res.status,
           error: errorMsg,
           meta: data.meta
         };
-      }
+      }      
+      // No Content
+      if (res.status === 204)
+        return { ok: true, status: 204 };
       
+      data.ok = true;
       return data;
 
     } catch (err) {
       return {
+        ok: false,
         status: 0,
         error: `Impossible de joindre l'API (${pm_api}): ${err.message}<br><span id="openOptionsBtnAlert">Modifier l'URL de base de l'API dans les options</span>.`
       };
@@ -126,9 +133,13 @@ export class ApiClient {
 
   // --- LIST CREDENTIALS ---
   async listCredentials(jwt, domain = null, username = null, description = null, limit = null, offset = null) {
-    return await this.fetchWithHandling('/credentials/list', {
-      headers: { 'Authorization': `Bearer ${jwt}` },
-      body: JSON.stringify({ domain, username, description, limit, offset })
+    const params = new URLSearchParams({ domain, username, description, limit, offset });
+    return await this.fetchWithHandling(`/credentials/list?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      }
     });
   }
 

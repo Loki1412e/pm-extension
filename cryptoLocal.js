@@ -72,3 +72,16 @@ export async function decryptWithPassword(ciphertextB64, ivB64, saltB64, masterP
   
   return new TextDecoder().decode(pt);
 }
+
+// --- Validité token JWT ---
+export function isJwtValid(token) {
+  if (!token) return false;
+  const [header, payload, signature] = token.split('.');
+  if (!header || !payload || !signature) return false;
+
+  // Vérification de l'expiration
+  const { exp } = JSON.parse(atob(payload));
+  if (Date.now() >= exp * 1000) return false;
+
+  return true;
+}

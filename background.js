@@ -1,7 +1,7 @@
 // background.js
 
 import { ApiClient } from './apiClient.js';
-import { encryptWithPassword, decryptWithPassword, deriveKeyPBKDF2 } from './cryptoLocal.js';
+import { encryptWithPassword, decryptWithPassword, deriveKeyPBKDF2, isJwtValid } from './cryptoLocal.js';
 
 const b = globalThis.browser ?? globalThis.chrome;
 const api = new ApiClient();
@@ -119,6 +119,12 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       
       // --- Actions ne nécessitant pas de JWT ---
       if (msg.type === 'GET_STATUS') {
+        if (state.jwt && !isJwtValid(state.jwt)) {
+          state.jwt = null;
+          state.masterKey = null;
+          state.decryptedVault = null;
+          await b.storage.local.set({ pm_jwt: null });
+        }
         sendResponse({
           ok: true,
           isLoggedIn: !!state.jwt,
@@ -191,8 +197,9 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       if (msg.type === 'UNLOCK_VAULT') {
         const encryptedVault = await api.listCredentials(state.jwt);
+        if (!encryptedVault.ok) throw new Error(encryptedVault.error);
         if (!encryptedVault.credentials || encryptedVault.credentials.length === 0) {
-          throw new Error("Coffre vide. Impossible de vérifier la valididité du mot de passe maître. Supprimmez le compte et recréez-en un.");
+          throw new Error("Coffre vide. Impossible de vérifier la valididité du mot de passe maître. Supprimez le compte et recréez-en un.");
         }
 
         // Tester le mot de passe sur le premier identifiant
@@ -325,6 +332,15 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // (Gérer tes autres types de messages ici: 'GET_PASSWORD_PLAINTEXT', etc.)
 
     } catch (err) {
+      if (err.message === "Invalid or expired token") {
+        // JWT invalide ou expiré
+        state.jwt = null;
+        state.masterKey = null;
+        state.decryptedVault = null;
+        await b.storage.local.set({ pm_jwt: null });
+        sendResponse({ ok: false, error: "SESSION_EXPIRED" });
+        return;
+      }
       // console.error(`Erreur lors du traitement du message ${msg.type}:`, err);
       sendResponse({ ok: false, error: String(err.message) });
     }
