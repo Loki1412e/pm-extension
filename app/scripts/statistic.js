@@ -16,15 +16,11 @@ async function loadStatistics() {
     return;
   }
 
-  // if (!res.isVaultUnlocked) {
-  //   document.getElementById('statTotal').textContent = '🔒';
-  //   showAlert('stats', 'Le coffre-fort est verrouillé. Déverrouillez-le pour voir vos statistiques.', 'warning', 0, 'alertContainer');
-  //   const alert = document.getElementById('stats');
-  //   alert.addEventListener('click', () => {
-  //     window.location.href = "vault.html";
-  //   });
-  //   return;
-  // }
+  if (!res.isVaultUnlocked) {
+    document.getElementById('statTotal').textContent = '🔒';
+    showAlert('stats', 'Le coffre-fort est verrouillé. Déverrouillez-le pour voir vos statistiques.', 'warning', 'alertContainer', 0);
+    return;
+  }
 
   // Récupérer tous les credentials pour calculer les stats
   const credRes = await b.runtime.sendMessage({ type: 'GET_ALL_DECRYPTED_CREDENTIALS' });

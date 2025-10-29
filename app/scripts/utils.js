@@ -25,7 +25,7 @@ export function respErrorMsg(res) {
 }
 
 // Affichage des alert
-export function showAlert(alertId, message, type = 'dark', duration = 5000, alertContainerId = 'alertContainer') {
+export function showAlert(alertId, message, type = 'dark', alertContainerId = 'alertContainer', duration = 5000) {
   const id = 'alert-' + alertId;
   const existing = document.getElementById(id);
   if (existing) existing.remove();
@@ -41,20 +41,16 @@ export function showAlert(alertId, message, type = 'dark', duration = 5000, aler
   alert.innerHTML = message;
   alert.style.borderRadius = "0.375rem";
   alert.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-  alert.style.cursor = "pointer";
 
   alert.addEventListener('click', () => alert.remove());
 
   const alertContainer = document.getElementById(alertContainerId);
   alertContainer.appendChild(alert);
 
-  if (duration <= 0) return;
-  if (duration == 5000) {
-    switch (type) {
-      case 'danger': return;
-      case 'info':
-      case 'warning': duration *= 2; break;
-    }
+  switch (type) {
+    case 'danger': return;
+    case 'info':
+    case 'warning': duration *= 2; break;
   }
 
   setTimeout(() => {
@@ -124,13 +120,13 @@ if (logoutBtn) {
     if (respIsOk(res)) {
       window.location.href = "../noLog/settings.html";
     }
-    else {
-      showAlert('logout', respErrorMsg(res) || 'Erreur lors de la déconnexion.', 'danger');
-    }
   });
 }
 
 //== Au chargement de la page ==//
 await loadUserSession();
+await loadExtensionVersion();
+await setTheme('toggleThemeIconId');
+
 await setTheme();
 await loadExtensionVersion();

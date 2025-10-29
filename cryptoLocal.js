@@ -33,55 +33,30 @@ export async function deriveKeyPBKDF2(masterPassword, saltB64, iterations = 300_
 }
 
 // --- Chiffrement ---
-export async function encryptCredential(plaintext, masterPassword = null, key = null) {
+export async function encryptWithPassword(plaintext, masterPassword) {
+  // Générer salt + dériver clé
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const saltB64 = b64FromArr(salt);
+  const key = await deriveKeyPBKDF2(masterPassword, saltB64);
   
-  let derivedKey;
-  let saltB64 = null; // Le salt n'est renvoyé que s'il est généré
-
-  // --- Cas 1: SIGNUP ---
-  // On nous donne le mot de passe maître, on doit TOUT créer.
-  if (masterPassword) {
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    saltB64 = b64FromArr(salt);
-    derivedKey = await deriveKeyPBKDF2(masterPassword, saltB64);
-  }
-
-  // --- Cas 2: CREATE_CREDENTIAL (coffre déverrouillé) ---
-  // On nous donne la clé dérivée, on l'utilise.
-  else if (key) derivedKey = key;
-
-  else throw new Error("encryptCredential: 'masterPassword' ou 'key' doit être fourni.");
-  
-  // --- Chiffrement (commun aux deux cas) ---
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ivB64 = b64FromArr(iv);
   const enc = new TextEncoder();
   
   const ct = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv }, 
-    derivedKey, 
+    key, 
     enc.encode(plaintext)
   );
   
-  const ciphertextB64 = b64FromArr(ct);
-
-  if (saltB64) {
-    // Cas 1 (SIGNUP): On renvoie tout, y compris le nouveau salt
-    return {
-      ciphertext: ciphertextB64,
-      iv: ivB64,
-      masterSalt: saltB64
-    };
-  }
-  // Cas 2 (CREATE_CREDENTIAL): On ne renvoie pas de salt
   return {
-    ciphertext: ciphertextB64,
-    iv: ivB64
+    ciphertext: b64FromArr(ct),
+    iv: b64FromArr(iv),
+    salt: saltB64 // On renvoie le B64
   };
 }
 
 // --- Déchiffrement (Optimisé) ---
-export async function decryptCredential(ciphertextB64, ivB64, saltB64, masterPassword = null, key = null) {
+export async function decryptWithPassword(ciphertextB64, ivB64, saltB64, masterPassword, key = null) {
   // Optimisation: Si la clé (CryptoKey) n'est pas fournie, on la dérive.
   // Sinon, on utilise la clé pré-dérivée.
   const derivedKey = key ? key : await deriveKeyPBKDF2(masterPassword, saltB64);
@@ -96,17 +71,4 @@ export async function decryptCredential(ciphertextB64, ivB64, saltB64, masterPas
   );
   
   return new TextDecoder().decode(pt);
-}
-
-// --- Validité token JWT ---
-export function isJwtValid(token) {
-  if (!token) return false;
-  const [header, payload, signature] = token.split('.');
-  if (!header || !payload || !signature) return false;
-
-  // Vérification de l'expiration
-  const { exp } = JSON.parse(atob(payload));
-  if (Date.now() >= exp * 1000) return false;
-
-  return true;
 }
