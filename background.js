@@ -92,8 +92,8 @@ async function loadSession() {
  */
 async function refreshVault() {
   console.log("Rafraîchissement du coffre...");
-  if (!state.jwt || !state.derivedKey) {
-    throw new Error("Impossible de rafraîchir : état (jwt/derivedKey) manquant.");
+  if (!state.jwt || !state.derivedKey || state.masterSalt === null) {
+    throw new Error("Impossible de rafraîchir : état (jwt/derivedKey/masterSalt) manquant.");
   }
 
   // 1. Récupérer le coffre chiffré (maintenant que l'API est corrigée)
@@ -123,7 +123,7 @@ async function refreshVault() {
       const plaintextPassword = await decryptCredential(
         cred.ciphertext,
         cred.iv,
-        masterSalt,
+        state.masterSalt,
         null, // On n'a pas le mot de passe, mais on a la clé
         state.derivedKey // On réutilise la clé déjà en mémoire
       );
