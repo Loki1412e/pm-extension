@@ -21,7 +21,7 @@ let state = {
   jwt: null,
   masterKey: null, // CryptoKey
   decryptedVault: null, // Map<string, object>
-  pendingSave: null // { url, username, password }
+  pendingSave: null // { domain, username, password }
 };
 
 // --- Initialisation au démarrage ---
@@ -136,7 +136,6 @@ async function refreshVault() {
       state.decryptedVault.set(cred.id, {
         id: cred.id,
         domain: cred.domain,
-        url: cred.url || `https://${cred.domain}`,
         username: cred.username,
         password: plaintextPassword,
         description: cred.description
@@ -223,6 +222,15 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'SIGNUP') {
+
+        if (!msg.username || !msg.password || !msg.masterPassword) {
+          let errMsg = "";
+          if (!msg.username) errMsg += "Nom d'utilisateur manquant.<br>";
+          if (!msg.password) errMsg += "Mot de passe manquant.<br>";
+          if (!msg.masterPassword) errMsg += "Mot de passe maître manquant.<br>";
+          throw new Error(errMsg.slice(0, -4));
+        }
+
         // Créer le credential de vérification
         const verificationPayload = `PM:${msg.username}`;
         const { ciphertext, iv, masterSalt } = await encryptCredential(verificationPayload, msg.masterPassword);
@@ -344,7 +352,6 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             vaultMap.set(cred.id, {
               id: cred.id,
               domain: cred.domain,
-              url: cred.url || `https://${cred.domain}`,
               username: cred.username,
               password: plaintextPassword,
               description: cred.description
@@ -421,7 +428,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       
       if (msg.type === 'PROMPT_TO_SAVE') {
         // Stocke temporairement les données et ouvre la fenêtre de validation
-        state.pendingSave = { url: msg.url, username: msg.username, password: msg.password };
+        state.pendingSave = { domain: msg.domain, username: msg.username, password: msg.password };
         
         await b.windows.create({
           url: b.runtime.getURL('popup/validation.html'),
@@ -448,8 +455,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (!state.pendingSave) throw new Error("Aucune sauvegarde en attente.");
         if (!state.derivedKey) throw new Error("Le coffre est verrouillé.");
 
-        const { url, username, password } = state.pendingSave;
-        const domain = new URL(url).hostname.replace(/^www\./, '');
+        const { domain, username, password } = state.pendingSave;
         
         // 1. Chiffrer le nouveau mot de passe
         const { ciphertext, iv } = await encryptCredential(password, null, state.derivedKey);
@@ -472,7 +478,6 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         state.decryptedVault.set(created.id, {
           id: created.id,
           domain: domain,
-          url: url,
           username: username,
           password: password, // On a déjà le mdp en clair
           description: msg.description || ''

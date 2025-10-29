@@ -165,7 +165,7 @@ export class ApiClient {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        "url": `https://${domain}`, // L'API attend 'url', pas 'domain'
+        "domain": domain,
         "username": username,
         "ciphertext": ciphertext,
         "iv": iv,
