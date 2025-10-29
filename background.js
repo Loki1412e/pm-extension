@@ -110,6 +110,12 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     try {
       // Attendre que la session soit chargée avant de traiter les messages
       await sessionLoadPromise;
+
+      if (msg.type === 'GET_DEFAULT_CONFIG') {
+        const defaults = getDefaultConf();
+        sendResponse({ ok: true, defaultConfig: defaults });
+        return;
+      }
       
       // --- Actions ne nécessitant pas de JWT ---
       if (msg.type === 'GET_STATUS') {
