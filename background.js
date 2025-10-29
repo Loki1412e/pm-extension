@@ -95,7 +95,8 @@ b.runtime.onInstalled.addListener(async () => {
 });
 
 // Charge la session immédiatement au cas où le service worker vient de se réveiller
-loadSession();
+// Et stocke la Promise pour pouvoir l'attendre dans le message handler
+let sessionLoadPromise = loadSession();
 
 
 /*
@@ -107,6 +108,9 @@ loadSession();
 b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
+      // Attendre que la session soit chargée avant de traiter les messages
+      await sessionLoadPromise;
+      
       // --- Actions ne nécessitant pas de JWT ---
       if (msg.type === 'GET_STATUS') {
         sendResponse({
