@@ -26,10 +26,13 @@ async function checkVaultStatus() {
 
   if (!res.isVaultUnlocked) {
     // Le coffre est verrouillé, afficher un message
-    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">🔒 Coffre-fort verrouillé</td></tr>';
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="4" class="text-center">🔒 Coffre-fort verrouillé</td></tr>';
+    if (decryptBtn) decryptBtn.classList.remove('d-none');
     showAlert('vault-status', 'Le coffre-fort est verrouillé. Déverrouillez-le pour voir vos identifiants.', 'warning', 0);
     return false;
   }
+
+  if (decryptBtn) decryptBtn.classList.add('d-none');
 
   return true;
 }
