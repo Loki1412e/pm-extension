@@ -124,6 +124,9 @@ if (logoutBtn) {
     if (respIsOk(res)) {
       window.location.href = "../noLog/settings.html";
     }
+    else {
+      showAlert('logout', respErrorMsg(res) || 'Erreur lors de la déconnexion.', 'danger');
+    }
   });
 }
 
