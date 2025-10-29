@@ -213,8 +213,7 @@ signupBtn.addEventListener('click', async () => {
   const res = await b.runtime.sendMessage({
     type: 'SIGNUP',
     username: usernameInput.value,
-    password: passwordInput.value,
-    masterPassword: passwordInput.value
+    password: passwordInput.value
   });
   
   if (respIsOk(res)) {
