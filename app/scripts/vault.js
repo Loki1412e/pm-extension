@@ -8,6 +8,13 @@ const searchUsername = $('#searchUsername');
 const searchDomain = $('#searchDomain');
 const tableBody = document.querySelector('tbody');
 
+const addEntryModalBtn = $('#addEntryModalBtn');
+const addCredentialModalEl = $('#addCredentialModal');
+const saveNewCredentialBtn = $('#saveNewCredentialBtn');
+const addCredAlert = $('#addCredAlert');
+const addCredentialForm = $('#addCredentialForm');
+const addCredentialModal = addCredentialModalEl ? new bootstrap.Modal(addCredentialModalEl) : null;
+
 let allCredentials = [];
 
 // Vérifie si le coffre est déverrouillé et charge les credentials
@@ -56,7 +63,8 @@ async function loadCredentials() {
   displayCredentials(allCredentials);
   
   if (allCredentials.length > 0) {
-    showAlert('vault-load', `${allCredentials.length} identifiant(s) chargé(s)`, 'success');
+    const plural = allCredentials.length > 1 ? 's' : '';
+    showAlert('vault-load', `${allCredentials.length} identifiant${plural} chargé${plural}`, 'success');
   }
 }
 
@@ -69,9 +77,9 @@ function displayCredentials(credentials) {
 
   tableBody.innerHTML = credentials.map(cred => `
     <tr data-id="${cred.id}" title="${cred.description || 'Pas de description'}">
-      <td><span class="cursor-pointer">${cred.domain || cred.url}</span></td>
-      <td><span class="cursor-pointer copy-field" data-value="${cred.username}">${cred.username}</span></td>
-      <td><span class="cursor-pointer copy-field password-field" data-value="${cred.password}">••••••••</span></td>
+      <td><span class="cursor-pointer copy-field domain" style="cursor: pointer;" data-value="${cred.domain}">${cred.domain}</span></td>
+      <td><span class="cursor-pointer copy-field username" style="cursor: pointer;" data-value="${cred.username}">${cred.username}</span></td>
+      <td><span class="cursor-pointer copy-field password-field" style="cursor: pointer;" data-value="${cred.password}">••••••••</span></td>
       <td>
         <button title="Copier le mot de passe" class="btn btn-sm btn-outline-primary copy-password-btn" data-password="${cred.password}">
           <i class="bi bi-clipboard"></i>
@@ -100,7 +108,7 @@ function attachEventListeners() {
     btn.addEventListener('click', async (e) => {
       const password = e.currentTarget.dataset.password;
       await navigator.clipboard.writeText(password);
-      showAlert('copy', 'Mot de passe copié !', 'success');
+      showAlert('copy', 'Mot de passe copié', 'info', 1000);
     });
   });
 
@@ -126,9 +134,20 @@ function attachEventListeners() {
   // Copier au clic sur les champs
   document.querySelectorAll('.copy-field').forEach(field => {
     field.addEventListener('click', async (e) => {
-      const value = e.currentTarget.dataset.value;
-      await navigator.clipboard.writeText(value);
-      showAlert('copy', 'Copié !', 'success');
+      // Récupère l'élément .copy-field réel même si un enfant a été cliqué
+      const target = e.currentTarget || e.target;
+      const fieldEl = (target && target.closest) ? (target.closest('.copy-field') || target) : target;
+      if (!fieldEl || !fieldEl.dataset) return;
+
+      const value = fieldEl.dataset.value;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (err) {
+        console.error('Impossible d\'écrire dans le presse-papiers', err);
+      }
+
+      const fieldType = fieldEl.classList.contains('password-field') ? 'Mot de passe' : fieldEl.classList.contains('domain') ? 'Domaine' : 'Identifiant';
+      showAlert('copy', `${fieldType} copié`, 'info', 1000);
     });
   });
 
@@ -158,12 +177,68 @@ if (searchDomain) {
   searchDomain.addEventListener('input', filterCredentials);
 }
 
+// --- Event listener bootsrap modal --- //
+// Ouvre le modal lorsque l'utilisateur clique sur "Ajouter"
+if (addEntryModalBtn && addCredentialModal) {
+  addEntryModalBtn.addEventListener('click', () => {
+    addCredentialForm.reset();
+    addCredAlert.classList.add('d-none'); // Cacher l'alerte
+    addCredentialModal.show();
+  });
+}
+
+// Gère la sauvegarde du nouveau credential
+if (saveNewCredentialBtn) {
+  saveNewCredentialBtn.addEventListener('click', async () => {
+    addCredAlert.classList.add('d-none'); // Cacher l'alerte
+    
+    const domain = $('#newDomain').value;
+    const username = $('#newUsername').value;
+    const password = $('#newPassword').value; // C'est le mdp en clair
+    const description = $('#newDescription').value;
+
+    if (!domain || !username || !password) {
+      addCredAlert.textContent = 'Veuillez remplir tous les champs obligatoires.';
+      addCredAlert.classList.remove('d-none');
+      return;
+    }
+
+    try {
+      saveNewCredentialBtn.disabled = true;
+      
+      // On envoie le mot de passe EN CLAIR au background script
+      const response = await b.runtime.sendMessage({
+        type: 'CREATE_CREDENTIAL',
+        payload: {
+          domain,
+          username,
+          password,
+          description
+        }
+      });
+
+      if (respIsOk(response)) {
+        addCredentialModal.hide();
+        await loadCredentials(); // Recharger la liste (cette fonction existe déjà dans votre code)
+        showAlert('vault-load', 'Identifiant ajouté avec succès', 'success');
+      } else {
+        throw new Error(respErrorMsg(response) || 'Erreur inconnue');
+      }
+
+    } catch (error) {
+      console.error('Erreur lors de la création du credential:', error);
+      addCredAlert.textContent = `Erreur: ${error.message}`;
+      addCredAlert.classList.remove('d-none');
+    } finally {
+      saveNewCredentialBtn.disabled = false;
+    }
+  });
+}
+
 // Déverrouiller le coffre
 if (decryptBtn) {
   decryptBtn.addEventListener('click', async () => {
-    // Rediriger vers le popup ou une page de déverrouillage
-    // Pour l'instant, on pourrait ouvrir le popup
-    showAlert('decrypt', 'Utilisez le popup de l\'extension pour déverrouiller le coffre', 'info');
+    showAlert('decrypt', "Utilisez le popup de l'extension pour déverrouiller le coffre", 'info');
   });
 }
 
