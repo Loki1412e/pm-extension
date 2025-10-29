@@ -100,11 +100,11 @@ export class ApiClient {
   }
 
   // --- SIGNUP ---
-  async signup(username, password, ciphertext, iv, salt) {
+  async signup(username, password, masterSalt, ciphertext, iv) {
     return await this.fetchWithHandling('/user/create', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, ciphertext, iv, salt })
+      body: JSON.stringify({ username, password, masterSalt, ciphertext, iv })
     });
   }
 
