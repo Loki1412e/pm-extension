@@ -125,7 +125,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           await b.storage.local.set({ pm_jwt: res.token, pm_username: msg.username });
           sendResponse({ ok: true });
         } else {
-          throw new Error(res.message || 'Échec de la connexion');
+          throw new Error(res.error || 'Échec de la connexion');
         }
         return;
       }
@@ -135,7 +135,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
          if (res.status === 200) {
           sendResponse({ ok: true, message: "Compte créé. Connectez-vous." });
         } else {
-          throw new Error(res.message || 'Échec de l\'inscription');
+          throw new Error(res.error || 'Échec de l\'inscription');
         }
         return;
       }
@@ -285,7 +285,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         });
         
         if (!created || created.status !== 200) {
-          throw new Error(created.message || "Échec de la création côté API.");
+          throw new Error(created.error || "Échec de la création côté API.");
         }
 
         // 3. Ajouter au coffre-fort local déchiffré

@@ -56,15 +56,8 @@ export class ApiClient {
       }
       
       if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        if (!errorData)
-          return {
-            status: res.status,
-            error: `Erreur HTTP ${res.status}`,
-            meta: data.meta
-          };
-        
-        const errorMsg = await this.parseFastAPIError(errorData);
+        // data est déjà parsé plus haut
+        const errorMsg = await this.parseFastAPIError(data);
         return {
           status: res.status,
           error: errorMsg,
