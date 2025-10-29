@@ -222,10 +222,19 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         throw new Error("Le coffre-fort est verrouillé.");
       }
       
+      if (msg.type === 'GET_ALL_DECRYPTED_CREDENTIALS') {
+        // Retourne tous les credentials déchiffrés
+        const allCreds = Array.from(state.decryptedVault.values());
+        sendResponse({ ok: true, credentials: allCreds });
+        return;
+      }
+      
       if (msg.type === 'GET_DECRYPTED_CREDENTIALS_FOR_DOMAIN') {
         const domain = msg.domain;
         if (!domain) {
-          sendResponse({ ok: true, matches: [] });
+          // Si pas de domaine fourni, retourner tous les credentials
+          const allCreds = Array.from(state.decryptedVault.values());
+          sendResponse({ ok: true, matches: allCreds });
           return;
         }
 

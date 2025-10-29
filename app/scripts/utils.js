@@ -1,5 +1,4 @@
-import { ApiClient } from '../../apiClient.js';
-const api = new ApiClient();
+const b = globalThis.browser ?? globalThis.chrome;
 
 const $ = s => document.querySelector(s);
 const html = document.documentElement;
@@ -14,6 +13,16 @@ const logoutBtn = $('#logout');
 const toggleThemeBtn = $('#toggleTheme');
 const toggleThemeIcon = $('#toggleThemeIconId');
 const iconClass = { 'dark': 'bi bi-sun pe-2', 'light': 'bi bi-moon-stars me-2', 'auto': 'bi bi-moon-stars me-2' };
+
+// --- Helpers pour normaliser les réponses ---
+export function respIsOk(res) {
+  return !!res && (res.ok === true || res.status === 200 || res.ok === 200);
+}
+
+export function respErrorMsg(res) {
+  if (!res) return null;
+  return res.error || res.message || (res.status ? `Erreur: res status = ${res.status}` : null);
+}
 
 // Affichage des alert
 export function showAlert(alertId, message, type = 'dark', alertContainerId = 'alertContainer', duration = 5000) {
@@ -53,7 +62,7 @@ export function showAlert(alertId, message, type = 'dark', alertContainerId = 'a
 
 export async function setTheme(toggleThemeIconId = 'toggleThemeIconId') {
   const toggleThemeIcon = document.getElementById(toggleThemeIconId);
-  let { pm_theme } = await chrome.storage.local.get('pm_theme');
+  let { pm_theme } = await b.storage.local.get('pm_theme');
   pm_theme = pm_theme || 'auto';
   html.setAttribute('data-bs-theme', pm_theme);
   if (!toggleThemeIcon) return;
@@ -64,24 +73,17 @@ export async function setTheme(toggleThemeIconId = 'toggleThemeIconId') {
 
 // Vérifie si le JWT est valide au lancement
 export async function loadUserSession() {
-  const { pm_jwt } = await chrome.storage.local.get(['pm_jwt']);
-
-  if (!pm_jwt) {
+  const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
+  
+  if (!respIsOk(res) || !res.isLoggedIn) {
     window.location.href = "../noLog/settings.html";
     return;
   }
 
-  try {
-    const res = await api.readUser(pm_jwt);
-
-    if (res.status < 200 || res.status >= 300) throw new Error(res.message || 'Session invalide');
-    const user = res.user;
-
-    await chrome.storage.local.set({ pm_username: user.username });
-
-  } catch(e) {
-    await chrome.storage.local.set({ pm_jwt: null });
-    window.location.href = "../noLog/settings.html";
+  // Charger le nom d'utilisateur pour l'affichage
+  const { pm_username } = await b.storage.local.get('pm_username');
+  if (pm_username) {
+    usernameElems.forEach(elem => { elem.textContent = pm_username; });
   }
 }
 
@@ -104,9 +106,9 @@ async function loadExtensionVersion() {
 // Toggle Theme
 if (toggleThemeBtn) {
   toggleThemeBtn.addEventListener('click', async () => {
-    const { pm_theme } = await chrome.storage.local.get('pm_theme');
+    const { pm_theme } = await b.storage.local.get('pm_theme');
     const newTheme = pm_theme === 'dark' ? 'light' : 'dark';
-    await chrome.storage.local.set({ pm_theme: newTheme });
+    await b.storage.local.set({ pm_theme: newTheme });
     setTheme('toggleThemeIconId');
   });
 }
@@ -114,12 +116,17 @@ if (toggleThemeBtn) {
 // Logout
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
-    await chrome.storage.local.set({ pm_jwt: null });
-    window.location.href = "../noLog/settings.html";
+    const res = await b.runtime.sendMessage({ type: 'LOGOUT' });
+    if (respIsOk(res)) {
+      window.location.href = "../noLog/settings.html";
+    }
   });
 }
 
 //== Au chargement de la page ==//
 await loadUserSession();
+await loadExtensionVersion();
+await setTheme('toggleThemeIconId');
+
 await setTheme();
 await loadExtensionVersion();

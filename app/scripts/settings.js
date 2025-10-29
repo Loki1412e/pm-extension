@@ -1,8 +1,6 @@
-import { showAlert, setTheme } from './utils.js';
-import { initDefaultStorage } from '../../background.js';
-import { ApiClient } from '../../apiClient.js';
-const api = new ApiClient();
+import { showAlert, setTheme, respIsOk, respErrorMsg } from './utils.js';
 
+const b = globalThis.browser ?? globalThis.chrome;
 const $ = s => document.querySelector(s);
 
 const urlAPI = $('#urlAPI');
@@ -23,6 +21,7 @@ const themeSelect = $('#themeSelect');
 
 const resetBtn = $('#reset');
 const saveBtn = $('#save');
+const testApiBtn = $('#testApiBtn');
 
 const DEFAULT_JWT_TTL = 10; // minutes
 
@@ -39,27 +38,29 @@ function setTtlInputGroup() {
   jwtTTL.style.flex = '0 0 40%';
 }
 
-// Teste la connexion à l'API
+// Teste la connexion à l'API via background.js
 async function testConnection() {
   const alertId = 'api-connection';
-  try {
-    await chrome.storage.local.set({ pm_api: urlAPI.value })
-    const res = await api.healthCheck();
-    if (res.status < 200 || res.status >= 300) throw new Error(res.error || res.message || res.detail || JSON.stringify(res));    
-    
-    if (res.meta.identifier !== 'passmanager_api') showAlert(alertId, `API connectée: Identifier non reconnu (= ${res.meta.identifier})`, 'warning');
-    else showAlert(alertId, 'API connectée', 'success');
+  showAlert(alertId, 'Test de connexion...', 'info');
+  
+  // Sauvegarder temporairement l'URL pour le test
+  await b.storage.local.set({ pm_api: urlAPI.value.trim().replace(/\/$/, '') });
+  
+  const res = await b.runtime.sendMessage({ type: 'API_HEALTH_CHECK' });
 
+  if (respIsOk(res)) {
+    const version = res?.meta?.version || '?.?.?';
+    showAlert(alertId, `API connectée (v${version})`, 'success');
     return true;
-  } catch (e) {
-    showAlert(alertId, `API: ${e.message}`, 'danger');
+  } else {
+    showAlert(alertId, respErrorMsg(res) || 'Erreur lors du test de connexion.', 'danger');
     return false;
   }
 }
 
-// Modifier tout les parametres
+// Charger tous les paramètres
 async function loadConfig() {
-  const config = await chrome.storage.local.get(null);
+  const config = await b.storage.local.get(null);
 
   // API URL
   urlAPI.value = config.pm_api || '';
@@ -87,9 +88,8 @@ async function loadConfig() {
   passProposeUsage.checked = !!config.pm_pass?.proposeUsage;
 }
 
-// Sauvegarder les parametres
+// Sauvegarder les paramètres
 async function saveParams() {
-  
   let apiBase = urlAPI.value.trim();
   if (apiBase.endsWith('/')) apiBase = apiBase.slice(0, -1);
 
@@ -105,7 +105,7 @@ async function saveParams() {
     return;
   }
   
-  await chrome.storage.local.set({
+  await b.storage.local.set({
     pm_api: apiBase,
     pm_ttl: ttl,
     pm_theme: themeSelect.value,
@@ -129,13 +129,41 @@ async function saveParams() {
   showAlert('save-params', 'Préférences sauvegardées', 'success');
 }
 
+// Obtenir la configuration par défaut du background
+async function getDefaultConf() {
+  return {
+    pm_api: 'https://api.ptitgourmand.uk/pm',
+    pm_jwt: null,
+    pm_ttl: 10,
+    pm_username: null,
+    pm_theme: 'auto',
+    pm_behavior: {
+      autofill: true
+    },
+    pm_pass: {
+      enforceUsage: true,
+      proposeUsage: true,
+      rules: {
+        length: 16,
+        lowercase: true,
+        uppercase: true,
+        numbers: true,
+        symbols: true
+      }
+    }
+  };
+}
+
 // Reset la config
 resetBtn.addEventListener('click', async () => {
   if (!confirm('Réinitialiser les paramètres ?')) return;
-  await initDefaultStorage();
+  
+  const defaults = await getDefaultConf();
+  await b.storage.local.set(defaults);
+  
   await setTheme();
   await loadConfig();
-  showAlert('save-params', 'Valeurs par défaut réstaurés', 'info');
+  showAlert('save-params', 'Valeurs par défaut restaurées', 'info');
 });
 
 // Sauvegarde la config
@@ -152,9 +180,11 @@ saveBtn.addEventListener('click', async () => {
 });
 
 // Test la connexion à l'API
-testApiBtn.addEventListener('click', async () => {
-  await testConnection();
-});
+if (testApiBtn) {
+  testApiBtn.addEventListener('click', async () => {
+    await testConnection();
+  });
+}
 
 // Affiche ou masque le champ custom
 jwtTTL.addEventListener('change', async () => {
