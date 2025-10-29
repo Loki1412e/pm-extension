@@ -93,11 +93,11 @@ export class ApiClient {
   }
 
   // --- SIGNUP ---
-  async signup(username, password) {
+  async signup(username, password, ciphertext, iv, salt) {
     return await this.fetchWithHandling('/user/create', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ username, password, ciphertext, iv, salt })
     });
   }
 
@@ -125,9 +125,10 @@ export class ApiClient {
   }
 
   // --- LIST CREDENTIALS ---
-  async listCredentials(jwt) {
+  async listCredentials(jwt, domain = null, username = null, description = null, limit = null, offset = null) {
     return await this.fetchWithHandling('/credentials/list', {
-      headers: { 'Authorization': `Bearer ${jwt}` }
+      headers: { 'Authorization': `Bearer ${jwt}` },
+      body: JSON.stringify({ domain, username, description, limit, offset })
     });
   }
 

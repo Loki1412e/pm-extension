@@ -141,22 +141,20 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'SIGNUP') {
-        let res = await api.signup(msg.username, msg.password);
-        if (res.status !== 200) throw new Error(res.error || "Échec de l'inscription");
-        res = await api.createCredential(state.jwt, {
-          domain: "passmanager",
-          username: msg.username,
-          ciphertext: "welcome",
-          iv: "welcomeiv123456",
-        });
-        if (res.status === 200) {
+
+        const verificationPayload = `PM:${msg.username}`;
+        const { ciphertext, iv, salt } = await encryptWithPassword(verificationPayload, msg.masterPassword);
+
+        let res = await api.signup(msg.username, msg.password,
+          ciphertext,
+          iv,
+          salt
+        );
+        if (res.status === 201) {
           sendResponse({ ok: true, message: "Compte créé. Connectez-vous." });
           return;
         }
-        const msgErrCred = res.error || "Échec de la création des identifiants";
-        res = await api.delete(state.jwt, msg.password);
-        if (res.status !== 200) msgErrCred += " / " + (res.error || "Échec de la suppression du compte");
-        throw new Error(msgErrCred);
+        throw new Error(res.error || "Échec de la création du compte");
       }
       
       if (msg.type === 'API_HEALTH_CHECK') {
@@ -194,22 +192,14 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'UNLOCK_VAULT') {
         const encryptedVault = await api.listCredentials(state.jwt);
         if (!encryptedVault.credentials || encryptedVault.credentials.length === 0) {
-          // Coffre vide, on crée une clé "virtuelle"
-          console.log("Coffre-fort vide. Déverrouillage virtuel.");
-          state.masterKey = await deriveKeyPBKDF2(msg.masterPassword, btoa("DEFAULT_SALT_FOR_EMPTY_VAULT")); // Utilise un salt connu pour un coffre vide
-          state.decryptedVault = new Map();
-          sendResponse({ ok: true });
-          return;
+          throw new Error("Coffre vide. Impossible de vérifier la valididité du mot de passe maître. Supprimmez le compte et recréez-en un.");
         }
 
         // Tester le mot de passe sur le premier identifiant
         const testCred = encryptedVault.credentials[0];
-        let derivedKey;
-        try {
-          derivedKey = await deriveKeyPBKDF2(msg.masterPassword, testCred.salt);
-          await decryptWithPassword(testCred.ciphertext, testCred.iv, testCred.salt, msg.masterPassword, derivedKey); // On passe la clé pour éviter de la re-dériver
-        } catch (e) {
-          console.error("Échec du déchiffrement:", e);
+        const derivedKey = await deriveKeyPBKDF2(msg.masterPassword, testCred.salt);
+        const password = await decryptWithPassword(testCred.ciphertext, testCred.iv, testCred.salt, msg.masterPassword, derivedKey); // On passe la clé pour éviter de la re-dériver
+        if (!password || password !== `PM:${msg.username}`) {
           throw new Error("Mot de passe maître invalide.");
         }
 
