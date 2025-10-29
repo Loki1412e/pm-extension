@@ -129,37 +129,16 @@ async function saveParams() {
   showAlert('save-params', 'Préférences sauvegardées', 'success');
 }
 
-// Obtenir la configuration par défaut du background
-async function getDefaultConf() {
-  return {
-    pm_api: 'https://api.ptitgourmand.uk/pm',
-    pm_jwt: null,
-    pm_ttl: 10,
-    pm_username: null,
-    pm_theme: 'auto',
-    pm_behavior: {
-      autofill: true
-    },
-    pm_pass: {
-      enforceUsage: true,
-      proposeUsage: true,
-      rules: {
-        length: 16,
-        lowercase: true,
-        uppercase: true,
-        numbers: true,
-        symbols: true
-      }
-    }
-  };
-}
-
 // Reset la config
 resetBtn.addEventListener('click', async () => {
   if (!confirm('Réinitialiser les paramètres ?')) return;
   
-  const defaults = await getDefaultConf();
-  await b.storage.local.set(defaults);
+  const res = await b.runtime.sendMessage({ type: 'GET_DEFAULT_CONFIG' });
+  if (!respIsOk(res) || !res.defaultConfig) {
+    showAlert('save-params', respErrorMsg(res) || 'Erreur lors de la réinitialisation des paramètres', 'danger');
+    return;
+  }
+  await b.storage.local.set(res.defaultConfig);
   
   await setTheme();
   await loadConfig();

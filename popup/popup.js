@@ -118,6 +118,8 @@ function showSection(section) {
 
 // Met à jour l'UI en fonction du status
 async function updateUI(status) {
+  if (masterPasswordInput) masterPasswordInput.value = '';
+
   if (!status.isLoggedIn) {
     showSection('login');
     const { pm_username } = await b.storage.local.get('pm_username');
@@ -173,12 +175,6 @@ toggleThemeBtn.addEventListener('click', async () => {
 });
 
 // Login
-usernameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginBtn.click();
-});
-passwordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') loginBtn.click();
-});
 loginBtn.addEventListener('click', async () => {
   setPopupStatus('Connexion...', 'info', 0);
   const res = await b.runtime.sendMessage({
@@ -202,10 +198,11 @@ signupBtn.addEventListener('click', async () => {
   const res = await b.runtime.sendMessage({
     type: 'SIGNUP',
     username: usernameInput.value,
-    password: passwordInput.value
+    password: passwordInput.value,
+    masterPassword: passwordInput.value
   });
 
-  if (res.ok) {
+  if (respIsOk(res)) {
     setPopupStatus(res.message || 'Compte créé.', 'success');
     passwordInput.value = '';
   } else {
@@ -221,24 +218,19 @@ unlockBtn.addEventListener('click', async () => {
     masterPassword: masterPasswordInput.value
   });
 
-  if (res.ok) {
+  if (respIsOk(res)) {
     setPopupStatus('Coffre déverrouillé', 'success');
     masterPasswordInput.value = '';
     updateUI({ isLoggedIn: true, isVaultUnlocked: true });
   } else {
+    if (res.error === "SESSION_EXPIRED") {
+      setPopupStatus('Session expirée. Veuillez vous reconnecter.', 'danger', 0);
+      updateUI({ isLoggedIn: false, isVaultUnlocked: false });
+      return;
+    }
     setPopupStatus(respErrorMsg(res) || 'Erreur lors du déverrouillage.', 'danger', 0);
     masterPasswordInput.select();
   }
-});
-
-// Touche "Entrée"
-[usernameInput, passwordInput].forEach(input => {
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') loginBtn.click();
-  });
-});
-masterPasswordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') unlockBtn.click();
 });
 
 // Logout
@@ -252,6 +244,16 @@ logoutBtn.addEventListener('click', async () => {
 vaultBtn.addEventListener('click', () => b.tabs.create({ url: 'app/vault.html' }));
 statisticBtn.addEventListener('click', () => b.tabs.create({ url: 'app/statistic.html' }));
 optionsBtn.addEventListener('click', () => b.runtime.openOptionsPage());
+
+// Touche "Entrée"
+[usernameInput, passwordInput].forEach(input => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') loginBtn.click();
+  });
+});
+masterPasswordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') unlockBtn.click();
+});
 
 
 // --- Initialisation ---
