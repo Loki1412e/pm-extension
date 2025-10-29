@@ -37,7 +37,7 @@ function getDefaultConf() {
       autofill: true
     },
     pm_pass: {
-      enforceUsage: true,
+      enforceUsage: false,
       proposeUsage: true,
       rules: {
         length: 16,
@@ -316,7 +316,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // (Gérer tes autres types de messages ici: 'GET_PASSWORD_PLAINTEXT', etc.)
 
     } catch (err) {
-      console.error(`Erreur lors du traitement du message ${msg.type}:`, err);
+      // console.error(`Erreur lors du traitement du message ${msg.type}:`, err);
       sendResponse({ ok: false, error: String(err.message) });
     }
   })();
