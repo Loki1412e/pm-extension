@@ -7,8 +7,12 @@ const ACTUAL_PAGE = window.location.pathname.split('/').pop().split('.')[0];
 const html = document.documentElement;
 const alertSection = $('#alertSection');
 const loginSection = $('#loginSection');
+const logoutSection = $('#logoutSection');
 const unlockSection = $('#unlockSection');
-const mainSection = $('#mainSection');
+const loggedInSection = $('#loggedInSection');
+const vaultSection = $('#vaultSection');
+const statisticSection = $('#statisticSection');
+const pmVersion = $('#pmVersion');
 
 const usernameInput = $('#username');
 const passwordInput = $('#password');
@@ -53,7 +57,7 @@ function respErrorMsg(res) {
 }
 
 // timeoutMs = 0 pour pas de timeout
-function setPopupStatus(message='', type='info', timeoutMs=TIME_TIMEOUT) {
+function setPopupStatus(message='', type=null, timeoutMs=TIME_TIMEOUT) {
   if (!alertSection) return;
   if (!message || message === '') {
     alertSection.classList = 'd-none';
@@ -86,18 +90,29 @@ function showSection(section) {
   // Cacher tout
   loginSection.classList.add('d-none');
   unlockSection.classList.add('d-none');
-  mainSection.classList.add('d-none');
-  logoutBtn.classList.add('d-none');
+  loggedInSection.classList.add('d-none');
+  vaultSection.classList.add('d-none');
+  statisticSection.classList.add('d-none');
+  logoutSection.classList.add('d-none');
 
   // Afficher la bonne
-  if (section === 'login') {
-    loginSection.classList.remove('d-none');
-  } else if (section === 'unlock') {
-    unlockSection.classList.remove('d-none');
-    logoutBtn.classList.remove('d-none'); // On peut se déconnecter
-  } else if (section === 'main') {
-    mainSection.classList.remove('d-none');
-    logoutBtn.classList.remove('d-none');
+  switch (section) {
+    case 'login':
+      loginSection.classList.remove('d-none');
+      break;
+    
+    case 'unlock':
+      loggedInSection.classList.remove('d-none');
+      unlockSection.classList.remove('d-none');
+      logoutSection.classList.remove('d-none');
+      break;
+    
+    case 'main':
+      loggedInSection.classList.remove('d-none');
+      vaultSection.classList.remove('d-none');
+      statisticSection.classList.remove('d-none');
+      logoutSection.classList.remove('d-none');
+      break;
   }
 }
 
@@ -129,6 +144,22 @@ async function setTheme() {
   toggleThemeIcon.classList = iconClass[pm_theme];
 }
 
+// Charge la version de l'extension
+async function loadExtensionVersion() {
+  if (!pmVersion) return;
+
+  try {
+    if (chrome.runtime?.getManifest) {
+      const manifest = chrome.runtime.getManifest();
+      pmVersion.textContent = !manifest?.version ? 'UNKNOWN VERSION' : `v${manifest.version}`;
+    } else {
+      pmVersion.textContent = 'UNKNOWN VERSION';
+    }
+  } catch (e) {
+    pmVersion.textContent = 'UNKNOWN VERSION';
+  }
+}
+
 // --- Événements ---
 
 // Theme
@@ -155,7 +186,7 @@ loginBtn.addEventListener('click', async () => {
   });
 
   if (respIsOk(res)) {
-    setPopupStatus('Connecté', 'success');
+    setPopupStatus();
     passwordInput.value = '';
     updateUI({ isLoggedIn: true, isVaultUnlocked: false });
   } else {
@@ -220,9 +251,11 @@ vaultBtn.addEventListener('click', () => b.tabs.create({ url: 'app/vault.html' }
 statisticBtn.addEventListener('click', () => b.tabs.create({ url: 'app/statistic.html' }));
 optionsBtn.addEventListener('click', () => b.runtime.openOptionsPage());
 
+
 // --- Initialisation ---
 async function init() {
-  setTheme();
+  await loadExtensionVersion();
+  await setTheme();
   const res = await b.runtime.sendMessage({ type: 'GET_STATUS' });
   if (respIsOk(res)) {
     updateUI(res);
