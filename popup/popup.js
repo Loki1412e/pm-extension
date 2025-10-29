@@ -118,6 +118,8 @@ function showSection(section) {
 
 // Met à jour l'UI en fonction du status
 async function updateUI(status) {
+  if (masterPasswordInput) masterPasswordInput.value = '';
+
   if (!status.isLoggedIn) {
     showSection('login');
     const { pm_username } = await b.storage.local.get('pm_username');
@@ -196,7 +198,8 @@ signupBtn.addEventListener('click', async () => {
   const res = await b.runtime.sendMessage({
     type: 'SIGNUP',
     username: usernameInput.value,
-    password: passwordInput.value
+    password: passwordInput.value,
+    masterPassword: passwordInput.value
   });
 
   if (respIsOk(res)) {

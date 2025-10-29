@@ -134,28 +134,35 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'LOGIN') {
-        const { pm_ttl } = await b.storage.local.get('pm_ttl');
-        const res = await api.login(msg.username, msg.password, pm_ttl || 10);
-        if (res.status === 200 && res.token) {
-          state.jwt = res.token;
-          await b.storage.local.set({ pm_jwt: res.token, pm_username: msg.username });
-          sendResponse({ ok: true });
-        } else {
-          throw new Error(res.error || 'Échec de la connexion');
-        }
-        return;
+          const { pm_ttl } = await b.storage.local.get('pm_ttl');
+          const res = await api.login(msg.username, msg.password, pm_ttl || 10);
+          
+          // On vérifie que le token ET les credentials sont présents
+          if (res.status === 200 && res.token && res.credentials) {
+              state.jwt = res.token;
+              
+              // Mettre à jour le stockage local
+              await b.storage.local.set({ 
+                  pm_jwt: res.token, 
+                  pm_username: msg.username,
+                  pm_vault: res.credentials
+              });
+              
+              // Le popup sait maintenant qu'il peut demander le déverrouillage (master pass)
+              sendResponse({ ok: true }); 
+          } else {
+              throw new Error(res.error || 'Échec de la connexion ou réponse invalide');
+          }
+          return;
       }
 
       if (msg.type === 'SIGNUP') {
-
+        // Créer le credential de vérification
         const verificationPayload = `PM:${msg.username}`;
         const { ciphertext, iv, salt } = await encryptWithPassword(verificationPayload, msg.masterPassword);
 
-        let res = await api.signup(msg.username, msg.password,
-          ciphertext,
-          iv,
-          salt
-        );
+        // Créer le compte avec le credential de vérification
+        let res = await api.signup(msg.username, msg.password, ciphertext, iv, salt);
         if (res.status === 201) {
           sendResponse({ ok: true, message: "Compte créé. Connectez-vous." });
           return;
@@ -196,17 +203,45 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'UNLOCK_VAULT') {
-        const encryptedVault = await api.listCredentials(state.jwt);
-        if (!encryptedVault.ok) throw new Error(encryptedVault.error);
-        if (!encryptedVault.credentials || encryptedVault.credentials.length === 0) {
-          throw new Error("Coffre vide. Impossible de vérifier la valididité du mot de passe maître. Supprimez le compte et recréez-en un.");
+        const { pm_vault } = await b.storage.local.get('pm_vault');
+        const credentials = pm_vault;
+
+        // Le reste de votre code fonctionne tel quel !
+        if (!credentials || credentials.length === 0) {
+          console.error(credentials);
+          throw new Error("Impossible de vérifier la validité du mot de passe maître (coffre vide). Supprimez le compte et recréez-en un.");
         }
 
-        // Tester le mot de passe sur le premier identifiant
-        const testCred = encryptedVault.credentials[0];
-        const derivedKey = await deriveKeyPBKDF2(msg.masterPassword, testCred.salt);
-        const password = await decryptWithPassword(testCred.ciphertext, testCred.iv, testCred.salt, msg.masterPassword, derivedKey); // On passe la clé pour éviter de la re-dériver
-        if (!password || password !== `PM:${msg.username}`) {
+        // Chercher le credential de vérification (logique du README)
+        const verificationCred = credentials.find(c => c.domain === 'password-manager');
+        if (!verificationCred) throw new Error("Credential de vérification introuvable.");
+        if (!verificationCred.ciphertext || !verificationCred.iv || !verificationCred.salt) {
+          console.error("Credential de vérification incomplet:", verificationCred);
+          throw new Error("Format de credential invalide. Le coffre pourrait être corrompu.");
+        }
+
+        // Tester le mot de passe maître sur le credential de vérification
+        let derivedKey;
+        let decryptedPayload;
+        try {
+          // On utilise les fonctions de cryptoLocal.js
+          derivedKey = await deriveKeyPBKDF2(msg.masterPassword, verificationCred.salt);
+          decryptedPayload = await decryptWithPassword(
+            verificationCred.ciphertext, 
+            verificationCred.iv, 
+            verificationCred.salt, 
+            msg.masterPassword, 
+            derivedKey
+          );
+        } catch (e) {
+          // console.error("Échec du déchiffrement du credential de vérification:", e);
+          throw new Error("Mot de passe maître invalide.");
+        }
+
+        // Vérifier que le payload correspond bien à "PM:username"
+        const { pm_username } = await b.storage.local.get('pm_username');
+        if (!decryptedPayload || decryptedPayload !== `PM:${pm_username}`) {
+          // console.error("Payload de vérification invalide:", decryptedPayload);
           throw new Error("Mot de passe maître invalide.");
         }
 
@@ -216,16 +251,35 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         // et on déchiffre tout le coffre en mémoire.
         const vaultMap = new Map();
-        for (const cred of encryptedVault.credentials) {
-          const plaintextPassword = await decryptWithPassword(cred.ciphertext, cred.iv, cred.salt, msg.masterPassword, state.masterKey);
-          vaultMap.set(cred.id, {
-            id: cred.id,
-            domain: new URL(cred.url).hostname.replace(/^www\./, ''), // Stocke le domaine nettoyé
-            url: cred.url,
-            username: cred.username,
-            password: plaintextPassword,
-            description: cred.description
-          });
+        for (const cred of credentials) {
+          // Ignorer le credential de vérification dans le coffre déchiffré
+          if (cred.domain === 'password-manager') continue;
+          
+          if (!cred.ciphertext || !cred.iv || !cred.salt) {
+            console.warn(`Credential ${cred.id} incomplet, ignoré:`, cred);
+            continue;
+          }
+
+          try {
+            const plaintextPassword = await decryptWithPassword(
+              cred.ciphertext, 
+              cred.iv, 
+              cred.salt, 
+              msg.masterPassword, 
+              state.masterKey
+            );
+            
+            vaultMap.set(cred.id, {
+              id: cred.id,
+              domain: cred.domain,
+              url: cred.url || `https://${cred.domain}`,
+              username: cred.username,
+              password: plaintextPassword,
+              description: cred.description
+            });
+          } catch (e) {
+            console.warn(`Impossible de déchiffrer le credential ${cred.id}:`, e);
+          }
         }
         state.decryptedVault = vaultMap;
         console.log(`Coffre déchiffré avec ${state.decryptedVault.size} éléments.`);

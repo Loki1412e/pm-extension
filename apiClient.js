@@ -133,8 +133,8 @@ export class ApiClient {
 
   // --- LIST CREDENTIALS ---
   async listCredentials(jwt, domain = null, username = null, description = null, limit = null, offset = null) {
-    const params = new URLSearchParams({ domain, username, description, limit, offset });
-    return await this.fetchWithHandling(`/credentials/list?${params.toString()}`, {
+    const params = `domain=${domain || ''}&username=${username || ''}&description=${description || ''}&limit=${limit || ''}&offset=${offset || ''}`;
+    return await this.fetchWithHandling(`/credentials/list?${params}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${jwt}`,
