@@ -170,7 +170,7 @@ export class ApiClient {
         "ciphertext": ciphertext,
         "iv": iv,
         "salt": salt,
-        "description": description 
+        "description": description || ""
       })
     });
   }

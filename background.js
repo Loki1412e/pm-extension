@@ -88,12 +88,12 @@ async function loadSession() {
 /**
  * Récupère le coffre chiffré depuis l'API, le sauvegarde
  * et le re-déchiffre dans le state.
- * Nécessite que state.jwt et state.masterKey existent.
+ * Nécessite que state.jwt et state.derivedKey existent.
  */
 async function refreshVault() {
   console.log("Rafraîchissement du coffre...");
-  if (!state.jwt || !state.masterKey) {
-    throw new Error("Impossible de rafraîchir : état (jwt/masterKey) manquant.");
+  if (!state.jwt || !state.derivedKey) {
+    throw new Error("Impossible de rafraîchir : état (jwt/derivedKey) manquant.");
   }
 
   // 1. Récupérer le coffre chiffré (maintenant que l'API est corrigée)
@@ -109,14 +109,10 @@ async function refreshVault() {
   // 3. (Ré)initialiser la Map du coffre déchiffré
   state.decryptedVault = new Map();
 
-  const { pm_username } = await b.storage.local.get('pm_username');
-
   // 4. Re-déchiffrer l'intégralité du coffre (comme dans UNLOCK_VAULT)
   for (const cred of encryptedCredentials) {
     // Ignorer le credential de vérification
-    if (cred.domain === 'password-manager' && cred.username === pm_username) {
-      continue;
-    }
+    if (cred.domain === 'password-manager') continue;
     
     if (!cred.ciphertext || !cred.iv) {
       console.warn(`Credential ${cred.id} incomplet, ignoré:`, cred);
@@ -124,7 +120,6 @@ async function refreshVault() {
     }
 
     try {
-      // (utilise la fonction de cryptoLocal.js)
       const plaintextPassword = await decryptCredential(
         cred.ciphertext,
         cred.iv,
@@ -345,7 +340,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               cred.ciphertext, 
               cred.iv, 
               masterSalt, 
-              msg.masterPassword, 
+              null, 
               state.derivedKey
             );
             
@@ -495,7 +490,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (err.message === "Invalid or expired token") {
         // JWT invalide ou expiré
         state.jwt = null;
-        state.masterKey = null;
+        state.derivedKey = null;
         state.decryptedVault = null;
         await b.storage.local.set({ pm_jwt: null });
         sendResponse({ ok: false, error: "SESSION_EXPIRED" });
@@ -514,10 +509,10 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function updateBadge(tabId) {
   if (!state.jwt) {
-    return b.action.setBadgeText({ tabId, text: '' });
+    return b.action.setBadgeText({ tabId, text: '🔴' });
   }
   
-  if (!state.masterKey) {
+  if (!state.derivedKey || !state.decryptedVault) {
     return b.action.setBadgeText({ tabId, text: '🔒' }); // Verrouillé
   }
 
@@ -538,7 +533,7 @@ async function updateBadge(tabId) {
     }
 
     if (b.action && b.action.setBadgeText) {
-      b.action.setBadgeText({ tabId, text: String(matchCount || '🔓') });
+      b.action.setBadgeText({ tabId, text: String(matchCount || '🟢') });
     }
   } catch (_) {}
 }
