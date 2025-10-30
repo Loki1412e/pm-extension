@@ -1,7 +1,7 @@
 // background.js
 
 import { ApiClient } from './apiClient.js';
-import { encryptCredential, decryptCredential, deriveKeyPBKDF2, isJwtValid } from './cryptoLocal.js';
+import { encryptWithPassword, decryptWithPassword, deriveKeyPBKDF2, isJwtValid } from './cryptoLocal.js';
 
 const b = globalThis.browser ?? globalThis.chrome;
 const api = new ApiClient();
@@ -21,7 +21,7 @@ let state = {
   jwt: null,
   masterKey: null, // CryptoKey
   decryptedVault: null, // Map<string, object>
-  pendingSave: null // { domain, username, password }
+  pendingSave: null // { url, username, password }
 };
 
 // --- Initialisation au démarrage ---
@@ -84,65 +84,6 @@ async function loadSession() {
   }
 }
 
-
-/**
- * Récupère le coffre chiffré depuis l'API, le sauvegarde
- * et le re-déchiffre dans le state.
- * Nécessite que state.jwt et state.derivedKey existent.
- */
-async function refreshVault() {
-  console.log("Rafraîchissement du coffre...");
-  if (!state.jwt || !state.derivedKey || state.masterSalt === null) {
-    throw new Error("Impossible de rafraîchir : état (jwt/derivedKey/masterSalt) manquant.");
-  }
-
-  // 1. Récupérer le coffre chiffré (maintenant que l'API est corrigée)
-  const res = await api.listCredentials(state.jwt);
-  if (res.status !== 200 || !res.credentials) {
-    throw new Error(res.error || "Échec de la récupération du coffre chiffré.");
-  }
-  const encryptedCredentials = res.credentials;
-
-  // 2. Sauvegarder le nouveau coffre chiffré dans le storage
-  await b.storage.local.set({ pm_vault: encryptedCredentials });
-  
-  // 3. (Ré)initialiser la Map du coffre déchiffré
-  state.decryptedVault = new Map();
-
-  // 4. Re-déchiffrer l'intégralité du coffre (comme dans UNLOCK_VAULT)
-  for (const cred of encryptedCredentials) {
-    // Ignorer le credential de vérification
-    if (cred.domain === 'password-manager') continue;
-    
-    if (!cred.ciphertext || !cred.iv) {
-      console.warn(`Credential ${cred.id} incomplet, ignoré:`, cred);
-      continue;
-    }
-
-    try {
-      const plaintextPassword = await decryptCredential(
-        cred.ciphertext,
-        cred.iv,
-        state.masterSalt,
-        null, // On n'a pas le mot de passe, mais on a la clé
-        state.derivedKey // On réutilise la clé déjà en mémoire
-      );
-      
-      state.decryptedVault.set(cred.id, {
-        id: cred.id,
-        domain: cred.domain,
-        username: cred.username,
-        password: plaintextPassword,
-        description: cred.description
-      });
-    } catch (e) {
-      console.warn(`Impossible de déchiffrer le credential ${cred.id} (refreshVault):`, e);
-    }
-  }
-  console.log(`Coffre rafraîchi avec ${state.decryptedVault.size} éléments.`);
-}
-
-
 b.runtime.onStartup.addListener(async () => {
   await initDefaultStorage();
   await loadSession();
@@ -180,14 +121,14 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'GET_STATUS') {
         if (state.jwt && !isJwtValid(state.jwt)) {
           state.jwt = null;
-          state.derivedKey = null;
+          state.masterKey = null;
           state.decryptedVault = null;
           await b.storage.local.set({ pm_jwt: null });
         }
         sendResponse({
           ok: true,
           isLoggedIn: !!state.jwt,
-          isVaultUnlocked: !!state.derivedKey && !!state.decryptedVault
+          isVaultUnlocked: !!state.masterKey
         });
         return;
       }
@@ -204,7 +145,6 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               await b.storage.local.set({ 
                   pm_jwt: res.token, 
                   pm_username: msg.username,
-                  pm_masterSalt: res.masterSalt,
                   pm_vault: res.credentials
               });
               
@@ -217,21 +157,12 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       if (msg.type === 'SIGNUP') {
-
-        if (!msg.username || !msg.password || !msg.masterPassword) {
-          let errMsg = "";
-          if (!msg.username) errMsg += "Nom d'utilisateur manquant.<br>";
-          if (!msg.password) errMsg += "Mot de passe manquant.<br>";
-          if (!msg.masterPassword) errMsg += "Mot de passe maître manquant.<br>";
-          throw new Error(errMsg.slice(0, -4));
-        }
-
         // Créer le credential de vérification
         const verificationPayload = `PM:${msg.username}`;
-        const { ciphertext, iv, masterSalt } = await encryptCredential(verificationPayload, msg.masterPassword);
+        const { ciphertext, iv, salt } = await encryptWithPassword(verificationPayload, msg.masterPassword);
 
         // Créer le compte avec le credential de vérification
-        let res = await api.signup(msg.username, msg.password, masterSalt, ciphertext, iv);
+        let res = await api.signup(msg.username, msg.password, ciphertext, iv, salt);
         if (res.status === 201) {
           sendResponse({ ok: true, message: "Compte créé. Connectez-vous." });
           return;
@@ -264,7 +195,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       if (msg.type === 'LOGOUT') {
         state.jwt = null;
-        state.derivedKey = null;
+        state.masterKey = null;
         state.decryptedVault = null;
         await b.storage.local.set({ pm_jwt: null });
         sendResponse({ ok: true });
@@ -274,12 +205,6 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'UNLOCK_VAULT') {
         const { pm_vault } = await b.storage.local.get('pm_vault');
         const credentials = pm_vault;
-        const { pm_masterSalt } = await b.storage.local.get('pm_masterSalt');
-        const masterSalt = pm_masterSalt;
-
-        if (!credentials || !masterSalt) {
-          throw new Error("Coffre-fort introuvable. Veuillez vous reconnecter.");
-        }
 
         // Le reste de votre code fonctionne tel quel !
         if (!credentials || credentials.length === 0) {
@@ -290,7 +215,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // Chercher le credential de vérification (logique du README)
         const verificationCred = credentials.find(c => c.domain === 'password-manager');
         if (!verificationCred) throw new Error("Credential de vérification introuvable.");
-        if (!verificationCred.ciphertext || !verificationCred.iv) {
+        if (!verificationCred.ciphertext || !verificationCred.iv || !verificationCred.salt) {
           console.error("Credential de vérification incomplet:", verificationCred);
           throw new Error("Format de credential invalide. Le coffre pourrait être corrompu.");
         }
@@ -300,11 +225,11 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         let decryptedPayload;
         try {
           // On utilise les fonctions de cryptoLocal.js
-          derivedKey = await deriveKeyPBKDF2(msg.masterPassword, masterSalt);
-          decryptedPayload = await decryptCredential(
+          derivedKey = await deriveKeyPBKDF2(msg.masterPassword, verificationCred.salt);
+          decryptedPayload = await decryptWithPassword(
             verificationCred.ciphertext, 
             verificationCred.iv, 
-            masterSalt, 
+            verificationCred.salt, 
             msg.masterPassword, 
             derivedKey
           );
@@ -320,8 +245,8 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           throw new Error("Mot de passe maître invalide.");
         }
 
-        // Le mot de passe est bon ! On stocke la clé dérivée
-        state.derivedKey = derivedKey;
+        // Le mot de passe est bon ! On stocke la clé...
+        state.masterKey = derivedKey;
         console.log("Coffre déverrouillé. Déchiffrement en cours...");
 
         // et on déchiffre tout le coffre en mémoire.
@@ -330,23 +255,24 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           // Ignorer le credential de vérification dans le coffre déchiffré
           if (cred.domain === 'password-manager') continue;
           
-          if (!cred.ciphertext || !cred.iv) {
+          if (!cred.ciphertext || !cred.iv || !cred.salt) {
             console.warn(`Credential ${cred.id} incomplet, ignoré:`, cred);
             continue;
           }
 
           try {
-            const plaintextPassword = await decryptCredential(
+            const plaintextPassword = await decryptWithPassword(
               cred.ciphertext, 
               cred.iv, 
-              masterSalt, 
-              null, 
-              state.derivedKey
+              cred.salt, 
+              msg.masterPassword, 
+              state.masterKey
             );
             
             vaultMap.set(cred.id, {
               id: cred.id,
               domain: cred.domain,
+              url: cred.url || `https://${cred.domain}`,
               username: cred.username,
               password: plaintextPassword,
               description: cred.description
@@ -362,37 +288,8 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
 
       // --- Actions nécessitant un coffre déverrouillé (ci-dessous) ---
-      if (!state.derivedKey || !state.decryptedVault) {
+      if (!state.masterKey || !state.decryptedVault) {
         throw new Error("Le coffre-fort est verrouillé.");
-      }
-      
-      if (msg.type === 'CREATE_CREDENTIAL') {
-        const { domain, username, password, description } = msg.payload;
-        const { pm_masterSalt } = await b.storage.local.get('pm_masterSalt');
-        const masterSalt = pm_masterSalt;
-
-        // 1. Chiffrer le mot de passe en clair avec la clé maître
-        // (utilise la fonction de cryptoLocal.js)
-        const { ciphertext, iv } = await encryptCredential(password, null, state.derivedKey);
-         
-
-        // 2. Appeler l'API avec les données chiffrées
-        // (utilise la fonction de apiClient.js)
-        const res = await api.createCredential(state.jwt, {
-          domain,
-          username,
-          ciphertext,
-          iv,
-          masterSalt,
-          description
-        });
-
-        // L'API (pm-api) renvoie 201 en cas de succès
-        if (res.status !== 201) throw new Error(res.error || "Échec de l'appel API");
-        // Mettre à jour le coffre en local pour un rafraîchissement instantané
-        await refreshVault(); 
-        sendResponse({ ok: true, status: 201, data: res.data });
-        return;
       }
       
       if (msg.type === 'GET_ALL_DECRYPTED_CREDENTIALS') {
@@ -423,7 +320,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       
       if (msg.type === 'PROMPT_TO_SAVE') {
         // Stocke temporairement les données et ouvre la fenêtre de validation
-        state.pendingSave = { domain: msg.domain, username: msg.username, password: msg.password };
+        state.pendingSave = { url: msg.url, username: msg.username, password: msg.password };
         
         await b.windows.create({
           url: b.runtime.getURL('popup/validation.html'),
@@ -448,12 +345,13 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       if (msg.type === 'CONFIRM_SAVE') {
         if (!state.pendingSave) throw new Error("Aucune sauvegarde en attente.");
-        if (!state.derivedKey) throw new Error("Le coffre est verrouillé.");
+        if (!msg.masterPassword) throw new Error("Mot de passe maître requis pour chiffrer.");
 
-        const { domain, username, password } = state.pendingSave;
+        const { url, username, password } = state.pendingSave;
+        const domain = new URL(url).hostname.replace(/^www\./, '');
         
         // 1. Chiffrer le nouveau mot de passe
-        const { ciphertext, iv } = await encryptCredential(password, null, state.derivedKey);
+        const { ciphertext, iv, salt } = await encryptWithPassword(password, msg.masterPassword);
 
         // 2. Envoyer à l'API
         const created = await api.createCredential(state.jwt, {
@@ -461,7 +359,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           username: username,
           ciphertext: ciphertext,
           iv: iv,
-          salt: masterSalt,
+          salt: salt,
           description: msg.description || ''
         });
         
@@ -473,6 +371,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         state.decryptedVault.set(created.id, {
           id: created.id,
           domain: domain,
+          url: url,
           username: username,
           password: password, // On a déjà le mdp en clair
           description: msg.description || ''
@@ -490,7 +389,7 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (err.message === "Invalid or expired token") {
         // JWT invalide ou expiré
         state.jwt = null;
-        state.derivedKey = null;
+        state.masterKey = null;
         state.decryptedVault = null;
         await b.storage.local.set({ pm_jwt: null });
         sendResponse({ ok: false, error: "SESSION_EXPIRED" });
@@ -509,10 +408,10 @@ b.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function updateBadge(tabId) {
   if (!state.jwt) {
-    return b.action.setBadgeText({ tabId, text: '🔴' });
+    return b.action.setBadgeText({ tabId, text: '' });
   }
   
-  if (!state.derivedKey || !state.decryptedVault) {
+  if (!state.masterKey) {
     return b.action.setBadgeText({ tabId, text: '🔒' }); // Verrouillé
   }
 
@@ -533,7 +432,7 @@ async function updateBadge(tabId) {
     }
 
     if (b.action && b.action.setBadgeText) {
-      b.action.setBadgeText({ tabId, text: String(matchCount || '🟢') });
+      b.action.setBadgeText({ tabId, text: String(matchCount || '🔓') });
     }
   } catch (_) {}
 }

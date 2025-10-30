@@ -92,8 +92,6 @@
               </tr>
             </thead>
             <tbody>
-<!--          Exemple d'entrée :
-          
               <tr title="Pas de description">
                 <td><span class="cursor-pointer">github.com</span></td>
                 <td><span class="cursor-pointer">johndoe</span></td>
@@ -103,7 +101,7 @@
                   <button title="Supprimer" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </td>
               </tr>
--->
+              <!-- Ajoute d'autres lignes ici -->
             </tbody>
           </table>
         </div>
@@ -118,43 +116,6 @@
   </main>
 
   <div id="alertContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050; width: 320px; display: flex; flex-direction: column-reverse; gap: 0.5rem;"></div>
-
-  <!-- Modals -->
-  <div class="modal fade" id="addCredentialModal" tabindex="-1" aria-labelledby="addCredentialModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addCredentialModalLabel">Ajouter un identifiant</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="addCredentialForm">
-            <div class="mb-3">
-              <label for="newDomain" class="form-label">Domaine (ex: github.com)</label>
-              <input type="text" class="form-control" id="newDomain" required>
-            </div>
-            <div class="mb-3">
-              <label for="newUsername" class="form-label">Nom d'utilisateur / Email</label>
-              <input type="text" class="form-control" id="newUsername" required>
-            </div>
-            <div class="mb-3">
-              <label for="newPassword" class="form-label">Mot de passe</label>
-              <input type="password" class="form-control" id="newPassword" required>
-            </div>
-            <div class="mb-3">
-              <label for="newDescription" class="form-label">Description (Optionnel)</label>
-              <input type="text" class="form-control" id="newDescription">
-            </div>
-          </form>
-          <div id="addCredAlert" class="alert alert-danger d-none" role="alert"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" id="saveNewCredentialBtn">Enregistrer</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- JS -->
   <script src="../libs/bootstrap-5.3.8/bootstrap.bundle.min.js" defer></script>
